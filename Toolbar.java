@@ -4,44 +4,55 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
 import java.io.File;
 import java.io.IOException;
 
 public class Toolbar extends JPanel implements ActionListener, ChangeListener {
-    private JButton clearBtn = new JButton("Clear");
+    private JButton clearBtn;
+    private JButton addAnimalBtn;
+    private JButton addFlowerBtn;
+    private JButton composeCanvasButton;
+    private JButton saveButton;
+    private JButton loadButton;
+    private JButton saveRightButton;
+    private JButton loadRightButton;
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
     private JLabel colorLabel = new JLabel("  ");
-    private JButton composeCanvasButton = new JButton("Compose");
-    private JButton saveButton = new JButton("Save Canvas");
-    private JButton loadButton = new JButton("Load Image");
-    private JButton saveRightButton = new JButton("Save Right Canvas");
-    private JButton loadRightButton = new JButton("Load Image to Right");
-    
+
     private RightCanvas rightCanvas;
     private LeftCanvas leftCanvas;
 
     public Toolbar(RightCanvas rightCanvas, LeftCanvas leftCanvas) {
         this.rightCanvas = rightCanvas;
         this.leftCanvas = leftCanvas;
-        
+
         setLayout(new FlowLayout(FlowLayout.LEFT));
-        
-        // Configure components
+
+        // Load buttons with updated icon names
+        clearBtn = createIconButton("resources/icons/clear.png", "Clear Drawing");
+        addAnimalBtn = createIconButton("resources/icons/add animal.png", "Add Animal");
+        addFlowerBtn = createIconButton("resources/icons/add flower.png", "Add Flower");
+        composeCanvasButton = createIconButton("resources/icons/compose.png", "Compose Left Canvas");
+        saveButton = createIconButton("resources/icons/save.png", "Save Left Canvas");
+        loadButton = createIconButton("resources/icons/load image.png", "Load Image to Left Canvas");
+        saveRightButton = createIconButton("resources/icons/save right.png", "Save Right Canvas");
+        loadRightButton = createIconButton("resources/icons/upload right.png", "Load Image to Right Canvas");
+
+        // Configure pen size slider
         penSizeSlider.setMinorTickSpacing(1);
         penSizeSlider.setMajorTickSpacing(5);
         penSizeSlider.setPaintTicks(true);
         penSizeSlider.setPaintLabels(true);
-        
+
+        // Pen color preview box
         colorLabel.setOpaque(true);
         colorLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         colorLabel.setBackground(rightCanvas.getPenColor());
-        
-        // Add components
+
+        // Add components to toolbar
         add(clearBtn);
-        add(new JButton("Add Animal"));
-        add(new JButton("Add Flower"));
+        add(addAnimalBtn);
+        add(addFlowerBtn);
         add(penSizeSlider);
         add(colorLabel);
         add(composeCanvasButton);
@@ -49,68 +60,72 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         add(loadButton);
         add(saveRightButton);
         add(loadRightButton);
-        
+
         // Add listeners
         clearBtn.addActionListener(this);
-        penSizeSlider.addChangeListener(this);
         composeCanvasButton.addActionListener(this);
         saveButton.addActionListener(this);
         loadButton.addActionListener(this);
         saveRightButton.addActionListener(this);
         loadRightButton.addActionListener(this);
+        penSizeSlider.addChangeListener(this);
+    }
+
+    private JButton createIconButton(String path, String tooltip) {
+        ImageIcon icon = new ImageIcon(path);
+        Image scaled = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
+        JButton button = new JButton(new ImageIcon(scaled));
+        button.setToolTipText(tooltip);
+        button.setPreferredSize(new Dimension(40, 40));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        return button;
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == clearBtn) {
             rightCanvas.clearCanvas();
-        } 
-        else if (e.getSource() == composeCanvasButton) {
+        } else if (e.getSource() == composeCanvasButton) {
             CanvasComposer.composeAndShow(leftCanvas);
-        }
-        else if (e.getSource() == saveButton) {
+        } else if (e.getSource() == saveButton) {
             saveCanvas(leftCanvas);
-        }
-        else if (e.getSource() == loadButton) {
+        } else if (e.getSource() == loadButton) {
             loadImage(leftCanvas);
-        }
-        else if (e.getSource() == saveRightButton) {
+        } else if (e.getSource() == saveRightButton) {
             saveCanvas(rightCanvas);
-        }
-        else if (e.getSource() == loadRightButton) {
+        } else if (e.getSource() == loadRightButton) {
             loadImage(rightCanvas);
         }
     }
 
     @Override
     public void stateChanged(ChangeEvent e) {
-        if (e.getSource() == penSizeSlider) {
-            if (!penSizeSlider.getValueIsAdjusting()) {
-                rightCanvas.setPenSize(penSizeSlider.getValue());
-            }
+        if (e.getSource() == penSizeSlider && !penSizeSlider.getValueIsAdjusting()) {
+            rightCanvas.setPenSize(penSizeSlider.getValue());
         }
     }
 
     private void saveCanvas(JPanel canvas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Canvas As");
-        int userSelection = fileChooser.showSaveDialog(null);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
-            String fileName = file.getName().toLowerCase();
-            String format = fileName.endsWith(".jpg") ? "jpg" : "png";
-            if (!fileName.endsWith("." + format)) {
+            String name = file.getName().toLowerCase();
+            String format = name.endsWith(".jpg") ? "jpg" : "png";
+            if (!name.endsWith("." + format)) {
                 file = new File(file.getAbsolutePath() + "." + format);
             }
             try {
                 if (canvas instanceof LeftCanvas) {
-                    ((LeftCanvas)canvas).saveCanvasToFile(file, format);
+                    ((LeftCanvas) canvas).saveCanvasToFile(file, format);
                 } else if (canvas instanceof RightCanvas) {
-                    ((RightCanvas)canvas).saveCanvasToFile(file, format);
+                    ((RightCanvas) canvas).saveCanvasToFile(file, format);
                 }
                 JOptionPane.showMessageDialog(null, "Canvas saved successfully!");
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Error saving file: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error saving: " + ex.getMessage());
             }
         }
     }
@@ -118,18 +133,17 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     private void loadImage(JPanel canvas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Open Image");
-        int userSelection = fileChooser.showOpenDialog(null);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             try {
                 if (canvas instanceof LeftCanvas) {
-                    ((LeftCanvas)canvas).loadImageFromFile(file);
+                    ((LeftCanvas) canvas).loadImageFromFile(file);
                 } else if (canvas instanceof RightCanvas) {
-                    ((RightCanvas)canvas).loadImageFromFile(file);
+                    ((RightCanvas) canvas).loadImageFromFile(file);
                 }
                 JOptionPane.showMessageDialog(null, "Image loaded successfully!");
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Error loading image: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error loading: " + ex.getMessage());
             }
         }
     }
