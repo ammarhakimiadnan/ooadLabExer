@@ -16,12 +16,14 @@ public class LeftCanvas extends JPanel {
     private boolean draggingImage = false;
     private Point dragStartPoint;
 
+    // construcor 
     public LeftCanvas() {
         setBackground(Color.WHITE);
         setupDragAndDrop();
         setupMouseListeners();
     }
 
+    // Method to set up drag-and-drop functionality
     private void setupDragAndDrop() {
         setTransferHandler(new TransferHandler() {
             @Override
