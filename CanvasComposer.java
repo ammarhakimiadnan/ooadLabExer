@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 
 public class CanvasComposer {
 
+    @SuppressWarnings("unused")
     public static void composeAndShow(LeftCanvas canvas) {
         BufferedImage[] imageHolder = new BufferedImage[1];
         imageHolder[0] = canvas.captureCanvas();
