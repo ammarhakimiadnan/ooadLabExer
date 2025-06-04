@@ -16,6 +16,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     private JButton loadButton;
     private JButton saveRightButton;
     private JButton loadRightButton;
+    private JButton rotateCanvasButton; // Add this line
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
     private JLabel colorLabel = new JLabel("  ");
 
@@ -37,6 +38,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         loadButton = createIconButton("resources/icons/load image.png", "Load Image to Left Canvas");
         saveRightButton = createIconButton("resources/icons/save right.png", "Save Right Canvas");
         loadRightButton = createIconButton("resources/icons/upload right.png", "Load Image to Right Canvas");
+        rotateCanvasButton = createIconButton("resources/icons/rotate.png", "Rotate Left Canvas 90°"); 
 
         // Configure pen size slider
         penSizeSlider.setMinorTickSpacing(1);
@@ -60,6 +62,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         add(loadButton);
         add(saveRightButton);
         add(loadRightButton);
+        add(rotateCanvasButton); 
 
         // Add listeners
         clearBtn.addActionListener(this);
@@ -69,6 +72,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         saveRightButton.addActionListener(this);
         loadRightButton.addActionListener(this);
         penSizeSlider.addChangeListener(this);
+        rotateCanvasButton.addActionListener(this); 
     }
 
     private JButton createIconButton(String path, String tooltip) {
@@ -97,6 +101,8 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
             saveCanvas(rightCanvas);
         } else if (e.getSource() == loadRightButton) {
             loadImage(rightCanvas);
+        } else if (e.getSource() == rotateCanvasButton) {
+            leftCanvas.rotateCanvas(Math.PI / 2); 
         }
     }
 
