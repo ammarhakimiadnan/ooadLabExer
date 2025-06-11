@@ -5,6 +5,7 @@ import java.awt.datatransfer.Transferable;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -18,42 +19,51 @@ public class LeftCanvas extends JPanel {
     // Represents an image on the canvas with transformation properties
     private static class CanvasImage {
         BufferedImage image;
-        Point position;
+        Point2D.Double position; 
         double rotation;
         double scale;
         boolean flipH, flipV;
 
         CanvasImage(BufferedImage img, Point pos) {
             image = img;
-            position = pos;
+            position = new Point2D.Double(pos.x, pos.y);
             rotation = 0;
             scale = 1.0;
             flipH = false;
             flipV = false;
         }
+
+        // Gets the center point of the image
+        Point2D.Double getCenter() {
+            double w = image.getWidth() * scale;
+            double h = image.getHeight() * scale;
+            return new Point2D.Double(position.x + w / 2, position.y + h / 2);
+        }
     }
 
-    // Types of interaction handles available on selected image
-    private enum HandleType { NONE, SCALE, FLIP_TOP, FLIP_BOTTOM, FLIP_LEFT, FLIP_RIGHT, ROTATE }
+    // interaction handles available on selected image
+    private enum HandleType { NONE, MOVE, SCALE, FLIP_TOP, FLIP_BOTTOM, FLIP_LEFT, FLIP_RIGHT, ROTATE }
 
-    private List<CanvasImage> images = new ArrayList<>();  
-    private CanvasImage selectedImage = null;              
-    private Point dragStartPoint;                          
-    private double dragStartRotation;                      
-    private double dragStartAngle;                         
-    private boolean dragging = false;                      
-    private boolean rotating = false;                      
-    private HandleType activeHandle = HandleType.NONE;     
-    private double canvasRotation = 0;                     
-    private final int HANDLE_SIZE = 10;                    
+    private List<CanvasImage> images = new ArrayList<>();
+    private CanvasImage selectedImage = null;
+    private HandleType activeHandle = HandleType.NONE;
+    
+    private Point dragStartPoint;
+    private double dragStartRotation;
+    private double dragStartAngle;
+    private double dragStartScaleDist;
+
+    private double canvasRotation = 0;
+    private final int HANDLE_SIZE = 10;
+    private final int ROTATE_HANDLE_OFFSET = 30; 
 
     public LeftCanvas() {
         setBackground(Color.WHITE);
-        setupDragAndDrop();   
+        setupDragAndDrop();
         setupMouseListeners();
     }
 
-    // Adds an image to the canvas at a default position
+    // Adds an image to the canvas 
     public void addImage(BufferedImage img) {
         images.add(new CanvasImage(img, new Point(50, 50)));
         repaint();
@@ -80,11 +90,11 @@ public class LeftCanvas extends JPanel {
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public boolean importData(TransferSupport support) {
                 if (!canImport(support)) return false;
                 try {
                     Transferable t = support.getTransferable();
-                    @SuppressWarnings("unchecked")
                     List<File> files = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
                     if (!files.isEmpty()) {
                         BufferedImage img = ImageIO.read(files.get(0));
@@ -101,190 +111,231 @@ public class LeftCanvas extends JPanel {
 
     // Mouse listeners for interaction: selection, dragging, rotating, flipping, and scaling
     private void setupMouseListeners() {
-        addMouseListener(new MouseAdapter() {
+        MouseAdapter adapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                selectedImage = getImageAt(e.getPoint()); 
-                if (selectedImage != null) {
-                    dragStartPoint = e.getPoint();
-                    dragStartRotation = selectedImage.rotation;
+                // Deselect if clicking on empty space
+                selectedImage = null;
 
-                    HandleType handle = getHandleAt(e.getPoint());
-                    activeHandle = handle;
+                // Find which image or handle is clicked
+                for (int i = images.size() - 1; i >= 0; i--) {
+                    CanvasImage img = images.get(i);
+                    HandleType handle = getHandleAt(e.getPoint(), img);
 
-                    if (handle == HandleType.ROTATE) {
-                        // Start rotating
-                        rotating = true;
-                        dragStartAngle = Math.atan2(e.getY() - selectedImage.position.y, e.getX() - selectedImage.position.x);
-                    } else {
-                        // Start dragging (either image or scale)
-                        dragging = true;
+                    if (handle != HandleType.NONE) {
+                        selectedImage = img;
+                        activeHandle = handle;
+                        dragStartPoint = e.getPoint();
+                        
+                        Point2D.Double center = selectedImage.getCenter();
+                        double dx = e.getX() - center.x;
+                        double dy = e.getY() - center.y;
+
+                        // Handle flipping on press for immediate feedback
+                        switch (handle) {
+                            case FLIP_LEFT:
+                            case FLIP_RIGHT:
+                                selectedImage.flipH = !selectedImage.flipH;
+                                activeHandle = HandleType.NONE; // Prevent dragging
+                                break;
+                            case FLIP_TOP:
+                            case FLIP_BOTTOM:
+                                selectedImage.flipV = !selectedImage.flipV;
+                                activeHandle = HandleType.NONE; // Prevent dragging
+                                break;
+                            case ROTATE:
+                                dragStartRotation = selectedImage.rotation;
+                                dragStartAngle = Math.atan2(dy, dx);
+                                break;
+                            case SCALE:
+                                // Base scaling on distance from the center
+                                dragStartScaleDist = Math.sqrt(dx * dx + dy * dy);
+                                break;
+                            default:
+                                break;
+                        }
+                        repaint();
+                        return; 
                     }
                 }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                // Reset drag/rotate flags
-                dragging = false;
-                rotating = false;
                 activeHandle = HandleType.NONE;
             }
 
             @Override
-            public void mouseClicked(MouseEvent e) {
-                // Perform flip on click if a flip handle is clicked
-                if (selectedImage != null && activeHandle != HandleType.NONE) {
-                    if (activeHandle == HandleType.FLIP_LEFT || activeHandle == HandleType.FLIP_RIGHT) {
-                        selectedImage.flipH = !selectedImage.flipH;
-                    } else if (activeHandle == HandleType.FLIP_TOP || activeHandle == HandleType.FLIP_BOTTOM) {
-                        selectedImage.flipV = !selectedImage.flipV;
-                    }
-                    repaint();
-                }
-            }
-        });
-
-        // Handles dragging for move, rotate, and scale
-        addMouseMotionListener(new MouseAdapter() {
-            @Override
             public void mouseDragged(MouseEvent e) {
-                if (selectedImage == null) return;
+                if (selectedImage == null || activeHandle == HandleType.NONE) return;
+                
+                Point2D.Double center = selectedImage.getCenter();
+                double dx = e.getX() - center.x;
+                double dy = e.getY() - center.y;
 
-                if (rotating) {
-                    // Update rotation angle based on drag
-                    double angle = Math.atan2(e.getY() - selectedImage.position.y, e.getX() - selectedImage.position.x);
-                    selectedImage.rotation = dragStartRotation + (angle - dragStartAngle);
-                    repaint();
-                } else if (dragging && activeHandle == HandleType.SCALE) {
-                    // Proportional scaling from center
-                    int dx = e.getX() - selectedImage.position.x;
-                    int dy = e.getY() - selectedImage.position.y;
-                    double newScale = Math.max(0.1, Math.min(5.0, Math.sqrt(dx * dx + dy * dy) / 100.0));
-                    selectedImage.scale = newScale;
-                    repaint();
-                } else if (dragging && activeHandle == HandleType.NONE) {
-                    // Move the image
-                    int dx = e.getX() - dragStartPoint.x;
-                    int dy = e.getY() - dragStartPoint.y;
-                    selectedImage.position.translate(dx, dy);
-                    dragStartPoint = e.getPoint();
-                    repaint();
+                switch (activeHandle) {
+                    case MOVE:
+                        double moveDx = e.getX() - dragStartPoint.x;
+                        double moveDy = e.getY() - dragStartPoint.y;
+                        selectedImage.position.x += moveDx;
+                        selectedImage.position.y += moveDy;
+                        dragStartPoint = e.getPoint();
+                        break;
+                    
+                    // Implemented rotation logic
+                    case ROTATE:
+                        double currentAngle = Math.atan2(dy, dx);
+                        selectedImage.rotation = dragStartRotation + (currentAngle - dragStartAngle);
+                        break;
+                    
+                    // Implemented more intuitive scaling logic
+                    case SCALE:
+                        double currentDist = Math.sqrt(dx * dx + dy * dy);
+                        double scaleFactor = currentDist / dragStartScaleDist;
+                        // Apply scale factor to the original scale, clamping to reasonable values
+                        selectedImage.scale *= scaleFactor;
+                        selectedImage.scale = Math.max(0.1, Math.min(10.0, selectedImage.scale));
+                        dragStartScaleDist = currentDist; 
+                        break;
+                    
+                    default:
+                        break;
                 }
+                repaint();
             }
-        });
-
-        setFocusable(true); // Enables keyboard focus
-    }
-
-    // Returns the topmost image under a given point
-    private CanvasImage getImageAt(Point p) {
-        for (int i = images.size() - 1; i >= 0; i--) {
-            CanvasImage img = images.get(i);
-            int w = (int) (img.image.getWidth() * img.scale);
-            int h = (int) (img.image.getHeight() * img.scale);
-            Rectangle bounds = new Rectangle(img.position.x, img.position.y, w, h);
-            if (bounds.contains(p)) return img;
-        }
-        return null;
-    }
-
-    // Detects which handle is clicked at a point (corner, edge, or rotation)
-    private HandleType getHandleAt(Point p) {
-        if (selectedImage == null) return HandleType.NONE;
-
-        Rectangle box = new Rectangle(selectedImage.position.x, selectedImage.position.y,
-                (int) (selectedImage.image.getWidth() * selectedImage.scale),
-                (int) (selectedImage.image.getHeight() * selectedImage.scale));
-
-        // Corners for scaling
-        Point[] corners = {
-                new Point(box.x, box.y),
-                new Point(box.x + box.width, box.y),
-                new Point(box.x, box.y + box.height),
-                new Point(box.x + box.width, box.y + box.height)
         };
 
-        // Edges for flipping
-        Point[] edges = {
-                new Point(box.x + box.width / 2, box.y),             // top
-                new Point(box.x + box.width / 2, box.y + box.height),// bottom
-                new Point(box.x, box.y + box.height / 2),            // left
-                new Point(box.x + box.width, box.y + box.height / 2) // right
-        };
+        addMouseListener(adapter);
+        addMouseMotionListener(adapter);
+        setFocusable(true);
+    }
+    
+    // Creates the transformation for a given image (translate, rotate, scale)
+    private AffineTransform getTransformForImage(CanvasImage img) {
+        AffineTransform at = new AffineTransform();
+        Point2D.Double center = img.getCenter();
+        
+        at.translate(img.position.x, img.position.y);
+        at.rotate(img.rotation, center.x - img.position.x, center.y - img.position.y);
+        double scaleX = img.flipH ? -img.scale : img.scale;
+        double scaleY = img.flipV ? -img.scale : img.scale;
+        at.scale(scaleX, scaleY);
 
-        // Rotation handle
-        Point rotateHandle = new Point(box.x + box.width / 2, box.y - 20);
-
-        // Detect scaling handles
-        for (Point corner : corners) {
-            if (new Rectangle(corner.x - HANDLE_SIZE, corner.y - HANDLE_SIZE, HANDLE_SIZE * 2, HANDLE_SIZE * 2).contains(p))
-                return HandleType.SCALE;
-        }
-
-        // Detect rotation handle
-        if (new Rectangle(rotateHandle.x - HANDLE_SIZE, rotateHandle.y - HANDLE_SIZE, HANDLE_SIZE * 2, HANDLE_SIZE * 2).contains(p))
-            return HandleType.ROTATE;
-
-        // Detect flip edges
-        if (new Rectangle(edges[0].x - HANDLE_SIZE, edges[0].y - HANDLE_SIZE, HANDLE_SIZE * 2, HANDLE_SIZE * 2).contains(p)) return HandleType.FLIP_TOP;
-        if (new Rectangle(edges[1].x - HANDLE_SIZE, edges[1].y - HANDLE_SIZE, HANDLE_SIZE * 2, HANDLE_SIZE * 2).contains(p)) return HandleType.FLIP_BOTTOM;
-        if (new Rectangle(edges[2].x - HANDLE_SIZE, edges[2].y - HANDLE_SIZE, HANDLE_SIZE * 2, HANDLE_SIZE * 2).contains(p)) return HandleType.FLIP_LEFT;
-        if (new Rectangle(edges[3].x - HANDLE_SIZE, edges[3].y - HANDLE_SIZE, HANDLE_SIZE * 2, HANDLE_SIZE * 2).contains(p)) return HandleType.FLIP_RIGHT;
-
-        return HandleType.NONE;
+        return at;
     }
 
-    // Draws the canvas and its content
+    // Detects which handle is at a point
+    private HandleType getHandleAt(Point p, CanvasImage img) {
+        // check if the point is inside the rotated bounding box of the image
+        Shape transformedBounds = getTransformForImage(img).createTransformedShape(new Rectangle(0, 0, img.image.getWidth(), img.image.getHeight()));
+        if (!transformedBounds.contains(p)) {
+            // If not, check the rotation handle which is outside the box
+            Point2D transformedRotHandle = getTransformedHandle(img, HandleType.ROTATE);
+            if (transformedRotHandle.distance(p) <= HANDLE_SIZE) {
+                return HandleType.ROTATE;
+            }
+            return HandleType.NONE;
+        }
+
+        // Check handles in reverse priority order
+        HandleType[] checkOrder = { HandleType.SCALE, HandleType.FLIP_TOP, HandleType.FLIP_BOTTOM, HandleType.FLIP_LEFT, HandleType.FLIP_RIGHT };
+        for (HandleType type : checkOrder) {
+            Point2D handlePoint = getTransformedHandle(img, type);
+            if (type == HandleType.SCALE) {
+                 Point2D[] corners = getTransformedCorners(img);
+                 for (Point2D corner : corners) {
+                     if (corner.distance(p) <= HANDLE_SIZE) return HandleType.SCALE;
+                 }
+            } else {
+                 if (handlePoint.distance(p) <= HANDLE_SIZE) return type;
+            }
+        }
+        
+        return HandleType.MOVE;
+    }
+    
+    // Helper to get the screen coordinates of the 4 corner handles
+    private Point2D[] getTransformedCorners(CanvasImage img) {
+        double w = img.image.getWidth();
+        double h = img.image.getHeight();
+        Point2D[] corners = {
+            new Point2D.Double(0, 0),          // Top-left
+            new Point2D.Double(w, 0),          // Top-right
+            new Point2D.Double(w, h),          // Bottom-right
+            new Point2D.Double(0, h)           // Bottom-left
+        };
+        getTransformForImage(img).transform(corners, 0, corners, 0, 4);
+        return corners;
+    }
+    
+    // Helper to calculate the transformed position of a specific handle
+    private Point2D getTransformedHandle(CanvasImage img, HandleType type) {
+        double w = img.image.getWidth();
+        double h = img.image.getHeight();
+        Point2D.Double handlePos = new Point2D.Double();
+
+        switch (type) {
+            case FLIP_TOP:    handlePos.setLocation(w / 2, 0); break;
+            case FLIP_BOTTOM: handlePos.setLocation(w / 2, h); break;
+            case FLIP_LEFT:   handlePos.setLocation(0, h / 2); break;
+            case FLIP_RIGHT:  handlePos.setLocation(w, h / 2); break;
+            case ROTATE:      handlePos.setLocation(w / 2, -ROTATE_HANDLE_OFFSET / img.scale); break;
+            default: return null; 
+        }
+        
+        getTransformForImage(img).transform(handlePos, handlePos);
+        return handlePos;
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.rotate(canvasRotation, getWidth() / 2, getHeight() / 2); // Rotate entire canvas
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.rotate(canvasRotation, getWidth() / 2.0, getHeight() / 2.0); // Rotate entire canvas
 
-        // Draw all images with transformations
         for (CanvasImage img : images) {
-            AffineTransform at = new AffineTransform();
-            at.translate(img.position.x, img.position.y);
-            at.rotate(img.rotation, img.image.getWidth() * img.scale / 2, img.image.getHeight() * img.scale / 2);
-            at.scale(img.flipH ? -img.scale : img.scale, img.flipV ? -img.scale : img.scale);
-            g2.drawImage(img.image, at, null);
+            g2.drawImage(img.image, getTransformForImage(img), null);
         }
 
-        // Draw handles and bounding box for selected image
+        //handles for the selected image
         if (selectedImage != null) {
-            int w = (int) (selectedImage.image.getWidth() * selectedImage.scale);
-            int h = (int) (selectedImage.image.getHeight() * selectedImage.scale);
-            int x = selectedImage.position.x;
-            int y = selectedImage.position.y;
-
-            // Draw red selection box
+            AffineTransform originalTransform = g2.getTransform();
+            
+            Point2D[] corners = getTransformedCorners(selectedImage);
+            
             g2.setColor(Color.RED);
-            g2.drawRect(x, y, w, h);
+            g2.setStroke(new BasicStroke(1));
+            for (int i = 0; i < 4; i++) {
+                g2.drawLine((int) corners[i].getX(), (int) corners[i].getY(), (int) corners[(i + 1) % 4].getX(), (int) corners[(i + 1) % 4].getY());
+            }
 
-            // Points for all 8 handles and the rotate handle
-            Point[] handles = {
-                new Point(x, y),                   // top-left
-                new Point(x + w, y),               // top-right
-                new Point(x, y + h),               // bottom-left
-                new Point(x + w, y + h),           // bottom-right
-                new Point(x + w / 2, y),           // top (flip)
-                new Point(x + w / 2, y + h),       // bottom (flip)
-                new Point(x, y + h / 2),           // left (flip)
-                new Point(x + w, y + h / 2),       // right (flip)
-                new Point(x + w / 2, y - 20)       // rotation handle
-            };
+            // circular handles at each corner and edge, plus the rotation handle
+            List<Point2D> handlePoints = new ArrayList<>(List.of(corners));
+            handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_TOP));
+            handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_BOTTOM));
+            handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_LEFT));
+            handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_RIGHT));
+            handlePoints.add(getTransformedHandle(selectedImage, HandleType.ROTATE));
+            
+            // line to rotation handle
+            Point2D topMid = getTransformedHandle(selectedImage, HandleType.FLIP_TOP);
+            Point2D rotHandle = getTransformedHandle(selectedImage, HandleType.ROTATE);
+            if (topMid != null && rotHandle != null) {
+                g2.setColor(Color.BLACK);
+                g2.drawLine((int)topMid.getX(), (int)topMid.getY(), (int)rotHandle.getX(), (int)rotHandle.getY());
+            }
 
-            // Draw circular handles
-            for (Point pt : handles) {
-                Ellipse2D handle = new Ellipse2D.Double(pt.x - HANDLE_SIZE / 2, pt.y - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
+            for (Point2D pt : handlePoints) {
+                if (pt == null) continue;
+                Ellipse2D handle = new Ellipse2D.Double(pt.getX() - HANDLE_SIZE / 2.0, pt.getY() - HANDLE_SIZE / 2.0, HANDLE_SIZE, HANDLE_SIZE);
                 g2.setColor(Color.WHITE);
                 g2.fill(handle);
                 g2.setColor(Color.BLACK);
                 g2.draw(handle);
             }
+            g2.setTransform(originalTransform);
         }
-
         g2.dispose();
     }
 
