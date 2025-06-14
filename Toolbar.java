@@ -9,88 +9,93 @@ import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 
-// The Toolbar class provides buttons and tools for interacting with LeftCanvas and RightCanvas
+/**
+ * Toolbar with LeftCanvas controls aligned to the far left
+ * and RightCanvas controls pushed to the far right.
+ */
 public class Toolbar extends JPanel implements ActionListener, ChangeListener {
 
-    // Button declarations for various toolbar actions
-    private JButton clearBtn;
-    private JButton addAnimalBtn;
-    private JButton addFlowerBtn;
-    private JButton composeCanvasButton;
-    private JButton saveButton;
-    private JButton loadButton;
-    private JButton saveRightButton;
-    private JButton loadRightButton;
-    private JButton rotateCanvasButton;
-    private JButton deleteBtn;  // Delete selected image on LeftCanvas
+    // ===== LeftCanvas Buttons =====
+    private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton,
+            composeCanvasButton, rotateCanvasButton, deleteBtn;
 
-    // Pen stroke slider and color label
+    // ===== RightCanvas Buttons =====
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
     private JLabel colorLabel = new JLabel("  ");
+    private JButton clearBtn, loadRightButton, saveRightButton;
 
-    // Canvas references
     private RightCanvas rightCanvas;
     private LeftCanvas leftCanvas;
 
-    // Constructor to initialize the toolbar and all its components
     public Toolbar(RightCanvas rightCanvas, LeftCanvas leftCanvas) {
         this.rightCanvas = rightCanvas;
         this.leftCanvas = leftCanvas;
 
-        setLayout(new FlowLayout(FlowLayout.LEFT)); // Horizontal layout
+        // Use BorderLayout to split left/right control groups
+        setLayout(new BorderLayout());
 
-        // Initialize icon-based buttons with tooltip text
-        clearBtn = createIconButton("resources/icons/clear.png", "Clear Drawing");
+        // ==== LEFT Panel ====
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         addAnimalBtn = createIconButton("resources/icons/add animal.png", "Insert Animal Image");
         addFlowerBtn = createIconButton("resources/icons/add flower.png", "Insert Flower Image");
-        composeCanvasButton = createIconButton("resources/icons/compose.png", "Compose Left Canvas");
-        saveButton = createIconButton("resources/icons/save.png", "Save Left Canvas");
         loadButton = createIconButton("resources/icons/load image.png", "Load Image to Left Canvas");
-        saveRightButton = createIconButton("resources/icons/save right.png", "Save Right Canvas");
-        loadRightButton = createIconButton("resources/icons/upload right.png", "Load Image to Right Canvas");
+        saveButton = createIconButton("resources/icons/save.png", "Save Left Canvas");
+        composeCanvasButton = createIconButton("resources/icons/compose.png", "Compose Left Canvas");
         rotateCanvasButton = createIconButton("resources/icons/rotate.png", "Rotate Left Canvas 90°");
         deleteBtn = createIconButton("resources/icons/delete.png", "Delete Selected Image");
 
-        // Pen size slider configuration
+        leftPanel.add(addAnimalBtn);
+        leftPanel.add(addFlowerBtn);
+        leftPanel.add(loadButton);
+        leftPanel.add(saveButton);
+        leftPanel.add(composeCanvasButton);
+        leftPanel.add(rotateCanvasButton);
+        leftPanel.add(deleteBtn);
+
+        // ==== RIGHT Panel ====
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        clearBtn = createIconButton("resources/icons/clear.png", "Clear Right Canvas");
+        loadRightButton = createIconButton("resources/icons/upload right.png", "Load Image to Right Canvas");
+        saveRightButton = createIconButton("resources/icons/save right.png", "Save Right Canvas");
+
         penSizeSlider.setMinorTickSpacing(1);
         penSizeSlider.setMajorTickSpacing(5);
         penSizeSlider.setPaintTicks(true);
         penSizeSlider.setPaintLabels(true);
 
-        // Display the current pen color from RightCanvas
         colorLabel.setOpaque(true);
         colorLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         colorLabel.setBackground(rightCanvas.getPenColor());
 
-        // Add components to toolbar
-        add(clearBtn);
-        add(addAnimalBtn);
-        add(addFlowerBtn);
-        add(penSizeSlider);
-        add(colorLabel);
-        add(composeCanvasButton);
-        add(saveButton);
-        add(loadButton);
-        add(saveRightButton);
-        add(loadRightButton);
-        add(rotateCanvasButton);
-        add(deleteBtn); // Add delete button
+        rightPanel.add(penSizeSlider);
+        rightPanel.add(colorLabel);
+        rightPanel.add(clearBtn);
+        rightPanel.add(loadRightButton);
+        rightPanel.add(saveRightButton);
 
-        // Register event listeners
-        clearBtn.addActionListener(this);
+        // Add both sections to the toolbar
+        add(leftPanel, BorderLayout.WEST);
+        add(rightPanel, BorderLayout.EAST);
+
+        // ===== Register Listeners =====
         addAnimalBtn.addActionListener(this);
         addFlowerBtn.addActionListener(this);
-        composeCanvasButton.addActionListener(this);
-        saveButton.addActionListener(this);
         loadButton.addActionListener(this);
-        saveRightButton.addActionListener(this);
-        loadRightButton.addActionListener(this);
+        saveButton.addActionListener(this);
+        composeCanvasButton.addActionListener(this);
         rotateCanvasButton.addActionListener(this);
         deleteBtn.addActionListener(this);
+
+        clearBtn.addActionListener(this);
+        loadRightButton.addActionListener(this);
+        saveRightButton.addActionListener(this);
+
         penSizeSlider.addChangeListener(this);
     }
 
-    // Helper method to create a JButton with a scaled icon and tooltip
+    /**
+     * Creates an icon button with tooltip and styling.
+     */
     private JButton createIconButton(String path, String tooltip) {
         ImageIcon icon = new ImageIcon(path);
         Image scaled = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
@@ -103,43 +108,41 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         return button;
     }
 
-    // Respond to button actions
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == clearBtn) {
-            rightCanvas.clearCanvas();
+        Object src = e.getSource();
 
-        } else if (e.getSource() == composeCanvasButton) {
-            CanvasComposer.composeAndShow(leftCanvas);
-
-        } else if (e.getSource() == saveButton) {
-            saveCanvas(leftCanvas);
-
-        } else if (e.getSource() == loadButton) {
+        // ==== LeftCanvas actions ====
+        if (src == addAnimalBtn || src == addFlowerBtn) {
+            insertImageFromDevice();
+        } else if (src == loadButton) {
             loadImage(leftCanvas);
+        } else if (src == saveButton) {
+            saveCanvas(leftCanvas);
+        } else if (src == composeCanvasButton) {
+            CanvasComposer.composeAndShow(leftCanvas);
+        } else if (src == rotateCanvasButton) {
+            leftCanvas.rotateCanvas(Math.PI / 2);
+        } else if (src == deleteBtn) {
+            leftCanvas.deleteSelectedImage();
+        }
 
-        } else if (e.getSource() == saveRightButton) {
-            saveCanvas(rightCanvas);
-
-        } else if (e.getSource() == loadRightButton) {
+        // ==== RightCanvas actions ====
+        else if (src == clearBtn) {
+            rightCanvas.clearCanvas();
+        } else if (src == loadRightButton) {
             loadImage(rightCanvas);
-
-        } else if (e.getSource() == rotateCanvasButton) {
-            leftCanvas.rotateCanvas(Math.PI / 2); // Rotate canvas by 90 degrees
-
-        } else if (e.getSource() == addAnimalBtn || e.getSource() == addFlowerBtn) {
-            insertImageFromDevice(); // Both buttons use same insertion logic
-
-        } else if (e.getSource() == deleteBtn) {
-            leftCanvas.deleteSelectedImage(); // Deletes currently selected image
+        } else if (src == saveRightButton) {
+            saveCanvas(rightCanvas);
         }
     }
 
-    // Let the user choose an image from their device and insert into LeftCanvas
+    /**
+     * Opens file chooser to insert an image into LeftCanvas.
+     */
     private void insertImageFromDevice() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select an Image to Insert");
-
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             try {
@@ -155,7 +158,9 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    // Respond to changes in pen size slider
+    /**
+     * Adjusts pen size for RightCanvas drawing.
+     */
     @Override
     public void stateChanged(ChangeEvent e) {
         if (e.getSource() == penSizeSlider && !penSizeSlider.getValueIsAdjusting()) {
@@ -163,7 +168,9 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    // Save canvas (left or right) to file
+    /**
+     * Shared save logic for both canvases.
+     */
     private void saveCanvas(JPanel canvas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Canvas As");
@@ -189,7 +196,9 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    // Load image file into canvas
+    /**
+     * Shared image loader for both canvases.
+     */
     private void loadImage(JPanel canvas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Open Image");
@@ -209,4 +218,6 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 }
+
+
 
