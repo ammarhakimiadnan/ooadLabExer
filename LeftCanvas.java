@@ -33,7 +33,6 @@ public class LeftCanvas extends JPanel {
             flipV = false;
         }
 
-        // Gets the center point of the image
         Point2D.Double getCenter() {
             double w = image.getWidth() * scale;
             double h = image.getHeight() * scale;
@@ -41,7 +40,6 @@ public class LeftCanvas extends JPanel {
         }
     }
 
-    // interaction handles available on selected image
     private enum HandleType { NONE, MOVE, SCALE, FLIP_TOP, FLIP_BOTTOM, FLIP_LEFT, FLIP_RIGHT, ROTATE }
 
     private List<CanvasImage> images = new ArrayList<>();
@@ -63,10 +61,15 @@ public class LeftCanvas extends JPanel {
         setupMouseListeners();
     }
 
-    // Adds an image to the canvas 
+    // Adds an image to the canvas at default position (used internally)
     public void addImage(BufferedImage img) {
         images.add(new CanvasImage(img, new Point(50, 50)));
         repaint();
+    }
+
+    // ✅ Public method for Toolbar to insert user-selected images
+    public void insertImage(BufferedImage image) {
+        addImage(image); // Calls the same logic as file drag/drop or load
     }
 
     // Rotates the entire canvas
@@ -75,13 +78,12 @@ public class LeftCanvas extends JPanel {
         repaint();
     }
 
-    // Loads an image file into the canvas
+    // Loads an image from file (e.g., via load button or drag-and-drop)
     public void loadImageFromFile(File file) throws IOException {
         BufferedImage img = ImageIO.read(file);
         addImage(img);
     }
 
-    // Drag-and-drop setup for importing images
     private void setupDragAndDrop() {
         setTransferHandler(new TransferHandler() {
             @Override
@@ -109,15 +111,11 @@ public class LeftCanvas extends JPanel {
         });
     }
 
-    // Mouse listeners for interaction: selection, dragging, rotating, flipping, and scaling
     private void setupMouseListeners() {
         MouseAdapter adapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                // Deselect if clicking on empty space
                 selectedImage = null;
-
-                // Find which image or handle is clicked
                 for (int i = images.size() - 1; i >= 0; i--) {
                     CanvasImage img = images.get(i);
                     HandleType handle = getHandleAt(e.getPoint(), img);
@@ -126,36 +124,34 @@ public class LeftCanvas extends JPanel {
                         selectedImage = img;
                         activeHandle = handle;
                         dragStartPoint = e.getPoint();
-                        
+
                         Point2D.Double center = selectedImage.getCenter();
                         double dx = e.getX() - center.x;
                         double dy = e.getY() - center.y;
 
-                        // Handle flipping on press for immediate feedback
                         switch (handle) {
                             case FLIP_LEFT:
                             case FLIP_RIGHT:
                                 selectedImage.flipH = !selectedImage.flipH;
-                                activeHandle = HandleType.NONE; // Prevent dragging
+                                activeHandle = HandleType.NONE;
                                 break;
                             case FLIP_TOP:
                             case FLIP_BOTTOM:
                                 selectedImage.flipV = !selectedImage.flipV;
-                                activeHandle = HandleType.NONE; // Prevent dragging
+                                activeHandle = HandleType.NONE;
                                 break;
                             case ROTATE:
                                 dragStartRotation = selectedImage.rotation;
                                 dragStartAngle = Math.atan2(dy, dx);
                                 break;
                             case SCALE:
-                                // Base scaling on distance from the center
                                 dragStartScaleDist = Math.sqrt(dx * dx + dy * dy);
                                 break;
                             default:
                                 break;
                         }
                         repaint();
-                        return; 
+                        return;
                     }
                 }
             }
@@ -168,7 +164,7 @@ public class LeftCanvas extends JPanel {
             @Override
             public void mouseDragged(MouseEvent e) {
                 if (selectedImage == null || activeHandle == HandleType.NONE) return;
-                
+
                 Point2D.Double center = selectedImage.getCenter();
                 double dx = e.getX() - center.x;
                 double dy = e.getY() - center.y;
@@ -181,23 +177,17 @@ public class LeftCanvas extends JPanel {
                         selectedImage.position.y += moveDy;
                         dragStartPoint = e.getPoint();
                         break;
-                    
-                    // Implemented rotation logic
                     case ROTATE:
                         double currentAngle = Math.atan2(dy, dx);
                         selectedImage.rotation = dragStartRotation + (currentAngle - dragStartAngle);
                         break;
-                    
-                    // Implemented more intuitive scaling logic
                     case SCALE:
                         double currentDist = Math.sqrt(dx * dx + dy * dy);
                         double scaleFactor = currentDist / dragStartScaleDist;
-                        // Apply scale factor to the original scale, clamping to reasonable values
                         selectedImage.scale *= scaleFactor;
                         selectedImage.scale = Math.max(0.1, Math.min(10.0, selectedImage.scale));
-                        dragStartScaleDist = currentDist; 
+                        dragStartScaleDist = currentDist;
                         break;
-                    
                     default:
                         break;
                 }
@@ -209,12 +199,11 @@ public class LeftCanvas extends JPanel {
         addMouseMotionListener(adapter);
         setFocusable(true);
     }
-    
-    // Creates the transformation for a given image (translate, rotate, scale)
+
     private AffineTransform getTransformForImage(CanvasImage img) {
         AffineTransform at = new AffineTransform();
         Point2D.Double center = img.getCenter();
-        
+
         at.translate(img.position.x, img.position.y);
         at.rotate(img.rotation, center.x - img.position.x, center.y - img.position.y);
         double scaleX = img.flipH ? -img.scale : img.scale;
@@ -224,12 +213,11 @@ public class LeftCanvas extends JPanel {
         return at;
     }
 
-    // Detects which handle is at a point
     private HandleType getHandleAt(Point p, CanvasImage img) {
-        // check if the point is inside the rotated bounding box of the image
-        Shape transformedBounds = getTransformForImage(img).createTransformedShape(new Rectangle(0, 0, img.image.getWidth(), img.image.getHeight()));
+        Shape transformedBounds = getTransformForImage(img).createTransformedShape(
+                new Rectangle(0, 0, img.image.getWidth(), img.image.getHeight()));
+
         if (!transformedBounds.contains(p)) {
-            // If not, check the rotation handle which is outside the box
             Point2D transformedRotHandle = getTransformedHandle(img, HandleType.ROTATE);
             if (transformedRotHandle.distance(p) <= HANDLE_SIZE) {
                 return HandleType.ROTATE;
@@ -237,38 +225,39 @@ public class LeftCanvas extends JPanel {
             return HandleType.NONE;
         }
 
-        // Check handles in reverse priority order
-        HandleType[] checkOrder = { HandleType.SCALE, HandleType.FLIP_TOP, HandleType.FLIP_BOTTOM, HandleType.FLIP_LEFT, HandleType.FLIP_RIGHT };
+        HandleType[] checkOrder = {
+            HandleType.SCALE, HandleType.FLIP_TOP, HandleType.FLIP_BOTTOM,
+            HandleType.FLIP_LEFT, HandleType.FLIP_RIGHT
+        };
+
         for (HandleType type : checkOrder) {
             Point2D handlePoint = getTransformedHandle(img, type);
             if (type == HandleType.SCALE) {
-                 Point2D[] corners = getTransformedCorners(img);
-                 for (Point2D corner : corners) {
-                     if (corner.distance(p) <= HANDLE_SIZE) return HandleType.SCALE;
-                 }
+                Point2D[] corners = getTransformedCorners(img);
+                for (Point2D corner : corners) {
+                    if (corner.distance(p) <= HANDLE_SIZE) return HandleType.SCALE;
+                }
             } else {
-                 if (handlePoint.distance(p) <= HANDLE_SIZE) return type;
+                if (handlePoint.distance(p) <= HANDLE_SIZE) return type;
             }
         }
-        
+
         return HandleType.MOVE;
     }
-    
-    // Helper to get the screen coordinates of the 4 corner handles
+
     private Point2D[] getTransformedCorners(CanvasImage img) {
         double w = img.image.getWidth();
         double h = img.image.getHeight();
         Point2D[] corners = {
-            new Point2D.Double(0, 0),          // Top-left
-            new Point2D.Double(w, 0),          // Top-right
-            new Point2D.Double(w, h),          // Bottom-right
-            new Point2D.Double(0, h)           // Bottom-left
+            new Point2D.Double(0, 0),
+            new Point2D.Double(w, 0),
+            new Point2D.Double(w, h),
+            new Point2D.Double(0, h)
         };
         getTransformForImage(img).transform(corners, 0, corners, 0, 4);
         return corners;
     }
-    
-    // Helper to calculate the transformed position of a specific handle
+
     private Point2D getTransformedHandle(CanvasImage img, HandleType type) {
         double w = img.image.getWidth();
         double h = img.image.getHeight();
@@ -280,9 +269,9 @@ public class LeftCanvas extends JPanel {
             case FLIP_LEFT:   handlePos.setLocation(0, h / 2); break;
             case FLIP_RIGHT:  handlePos.setLocation(w, h / 2); break;
             case ROTATE:      handlePos.setLocation(w / 2, -ROTATE_HANDLE_OFFSET / img.scale); break;
-            default: return null; 
+            default: return null;
         }
-        
+
         getTransformForImage(img).transform(handlePos, handlePos);
         return handlePos;
     }
@@ -292,43 +281,42 @@ public class LeftCanvas extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.rotate(canvasRotation, getWidth() / 2.0, getHeight() / 2.0); // Rotate entire canvas
+        g2.rotate(canvasRotation, getWidth() / 2.0, getHeight() / 2.0);
 
         for (CanvasImage img : images) {
             g2.drawImage(img.image, getTransformForImage(img), null);
         }
 
-        //handles for the selected image
         if (selectedImage != null) {
             AffineTransform originalTransform = g2.getTransform();
-            
             Point2D[] corners = getTransformedCorners(selectedImage);
-            
+
             g2.setColor(Color.RED);
             g2.setStroke(new BasicStroke(1));
             for (int i = 0; i < 4; i++) {
-                g2.drawLine((int) corners[i].getX(), (int) corners[i].getY(), (int) corners[(i + 1) % 4].getX(), (int) corners[(i + 1) % 4].getY());
+                g2.drawLine((int) corners[i].getX(), (int) corners[i].getY(),
+                            (int) corners[(i + 1) % 4].getX(), (int) corners[(i + 1) % 4].getY());
             }
 
-            // circular handles at each corner and edge, plus the rotation handle
             List<Point2D> handlePoints = new ArrayList<>(List.of(corners));
             handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_TOP));
             handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_BOTTOM));
             handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_LEFT));
             handlePoints.add(getTransformedHandle(selectedImage, HandleType.FLIP_RIGHT));
             handlePoints.add(getTransformedHandle(selectedImage, HandleType.ROTATE));
-            
-            // line to rotation handle
+
             Point2D topMid = getTransformedHandle(selectedImage, HandleType.FLIP_TOP);
             Point2D rotHandle = getTransformedHandle(selectedImage, HandleType.ROTATE);
             if (topMid != null && rotHandle != null) {
                 g2.setColor(Color.BLACK);
-                g2.drawLine((int)topMid.getX(), (int)topMid.getY(), (int)rotHandle.getX(), (int)rotHandle.getY());
+                g2.drawLine((int) topMid.getX(), (int) topMid.getY(), (int) rotHandle.getX(), (int) rotHandle.getY());
             }
 
             for (Point2D pt : handlePoints) {
                 if (pt == null) continue;
-                Ellipse2D handle = new Ellipse2D.Double(pt.getX() - HANDLE_SIZE / 2.0, pt.getY() - HANDLE_SIZE / 2.0, HANDLE_SIZE, HANDLE_SIZE);
+                Ellipse2D handle = new Ellipse2D.Double(pt.getX() - HANDLE_SIZE / 2.0,
+                                                        pt.getY() - HANDLE_SIZE / 2.0,
+                                                        HANDLE_SIZE, HANDLE_SIZE);
                 g2.setColor(Color.WHITE);
                 g2.fill(handle);
                 g2.setColor(Color.BLACK);
@@ -339,13 +327,11 @@ public class LeftCanvas extends JPanel {
         g2.dispose();
     }
 
-    // Save the canvas content to a file
     public void saveCanvasToFile(File file, String format) throws IOException {
         BufferedImage image = captureCanvas();
         ImageIO.write(image, format, file);
     }
 
-    // Captures the canvas as a BufferedImage
     public BufferedImage captureCanvas() {
         BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = image.createGraphics();

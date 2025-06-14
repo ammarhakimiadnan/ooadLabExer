@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     private JButton clearBtn;
@@ -16,7 +18,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     private JButton loadButton;
     private JButton saveRightButton;
     private JButton loadRightButton;
-    private JButton rotateCanvasButton; // Add this line
+    private JButton rotateCanvasButton;
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
     private JLabel colorLabel = new JLabel("  ");
 
@@ -29,16 +31,16 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
 
         setLayout(new FlowLayout(FlowLayout.LEFT));
 
-        // Load buttons with updated icon names
+        // Load buttons with icon paths
         clearBtn = createIconButton("resources/icons/clear.png", "Clear Drawing");
-        addAnimalBtn = createIconButton("resources/icons/add animal.png", "Add Animal");
-        addFlowerBtn = createIconButton("resources/icons/add flower.png", "Add Flower");
+        addAnimalBtn = createIconButton("resources/icons/add animal.png", "Insert Animal Image");
+        addFlowerBtn = createIconButton("resources/icons/add flower.png", "Insert Flower Image");
         composeCanvasButton = createIconButton("resources/icons/compose.png", "Compose Left Canvas");
         saveButton = createIconButton("resources/icons/save.png", "Save Left Canvas");
         loadButton = createIconButton("resources/icons/load image.png", "Load Image to Left Canvas");
         saveRightButton = createIconButton("resources/icons/save right.png", "Save Right Canvas");
         loadRightButton = createIconButton("resources/icons/upload right.png", "Load Image to Right Canvas");
-        rotateCanvasButton = createIconButton("resources/icons/rotate.png", "Rotate Left Canvas 90°"); 
+        rotateCanvasButton = createIconButton("resources/icons/rotate.png", "Rotate Left Canvas 90°");
 
         // Configure pen size slider
         penSizeSlider.setMinorTickSpacing(1);
@@ -51,7 +53,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         colorLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         colorLabel.setBackground(rightCanvas.getPenColor());
 
-        // Add components to toolbar
+        // Add all components to the toolbar
         add(clearBtn);
         add(addAnimalBtn);
         add(addFlowerBtn);
@@ -62,17 +64,19 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         add(loadButton);
         add(saveRightButton);
         add(loadRightButton);
-        add(rotateCanvasButton); 
+        add(rotateCanvasButton);
 
-        // Add listeners
+        // Register action listeners
         clearBtn.addActionListener(this);
+        addAnimalBtn.addActionListener(this);
+        addFlowerBtn.addActionListener(this);
         composeCanvasButton.addActionListener(this);
         saveButton.addActionListener(this);
         loadButton.addActionListener(this);
         saveRightButton.addActionListener(this);
         loadRightButton.addActionListener(this);
+        rotateCanvasButton.addActionListener(this);
         penSizeSlider.addChangeListener(this);
-        rotateCanvasButton.addActionListener(this); 
     }
 
     private JButton createIconButton(String path, String tooltip) {
@@ -91,18 +95,45 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == clearBtn) {
             rightCanvas.clearCanvas();
+
         } else if (e.getSource() == composeCanvasButton) {
             CanvasComposer.composeAndShow(leftCanvas);
+
         } else if (e.getSource() == saveButton) {
             saveCanvas(leftCanvas);
+
         } else if (e.getSource() == loadButton) {
             loadImage(leftCanvas);
+
         } else if (e.getSource() == saveRightButton) {
             saveCanvas(rightCanvas);
+
         } else if (e.getSource() == loadRightButton) {
             loadImage(rightCanvas);
+
         } else if (e.getSource() == rotateCanvasButton) {
-            leftCanvas.rotateCanvas(Math.PI / 2); 
+            leftCanvas.rotateCanvas(Math.PI / 2);
+
+        } else if (e.getSource() == addAnimalBtn || e.getSource() == addFlowerBtn) {
+            insertImageFromDevice();  // Same logic for both: open file picker and insert image
+        }
+    }
+
+    private void insertImageFromDevice() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Select an Image to Insert");
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try {
+                BufferedImage image = ImageIO.read(file);
+                if (image != null) {
+                    leftCanvas.insertImage(image);  // Call LeftCanvas method
+                } else {
+                    JOptionPane.showMessageDialog(this, "Unsupported image format.");
+                }
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Failed to load image: " + ex.getMessage());
+            }
         }
     }
 
