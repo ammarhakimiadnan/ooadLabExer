@@ -14,14 +14,9 @@ import javax.imageio.ImageIO;
  * and RightCanvas controls pushed to the far right.
  */
 public class Toolbar extends JPanel implements ActionListener, ChangeListener {
-
     // ===== LeftCanvas Buttons =====
-    private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton,
-            composeCanvasButton, rotateCanvasButton, deleteBtn;
-    
-    private JTextField widthField;
-    private JTextField heightField;
-    private JButton resizeButton;
+    private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton, composeCanvasButton, rotateCanvasButton, deleteBtn, resizeButton;
+    private JTextField widthField, heightField;
 
     // ===== RightCanvas Buttons =====
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
@@ -170,7 +165,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     public void setOutOfBoundsColor(Color color) {
         leftCanvas.setOutOfBoundsColor(color);
     }
-    
+
     /**
      * Opens file chooser to insert an image into LeftCanvas.
      */
