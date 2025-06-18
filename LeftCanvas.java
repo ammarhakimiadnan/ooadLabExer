@@ -273,13 +273,21 @@ public class LeftCanvas extends JPanel {
                     HandleType handle = getHandleAt(e.getPoint(), selectedImage);
                     switch (handle) {
                         case SCALE:
-                            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                            setCursor(Cursor.getPredefinedCursor(Cursor.NE_RESIZE_CURSOR));
                             break;
                         case ROTATE:
                             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                             break;
                         case MOVE:
                             setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                            break;
+                        case FLIP_TOP:
+                        case FLIP_BOTTOM:
+                            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                            break;
+                        case FLIP_LEFT:
+                        case FLIP_RIGHT:
+                            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                             break;
                         default:
                             setCursor(Cursor.getDefaultCursor());
