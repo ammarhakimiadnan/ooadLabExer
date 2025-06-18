@@ -64,11 +64,16 @@ public class LeftCanvas extends JPanel {
     private final int HANDLE_SIZE = 10;
     private final int ROTATE_HANDLE_OFFSET = 30;
 
+    private Dimension canvasSize = new Dimension(400, 400);
+    private BufferedImage canvasBackground;
+    private Color outOfBoundsColor = new Color(240, 240, 240); // Light gray
+
     // === Constructor ===
     public LeftCanvas() {
         setBackground(Color.WHITE);
         setupDragAndDrop();
         setupMouseListeners();
+        updateCanvasSize();
     }
 
     // === Public Methods ===
@@ -107,11 +112,32 @@ public class LeftCanvas extends JPanel {
 
     // Captures canvas as a BufferedImage
     public BufferedImage captureCanvas() {
-        BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(canvasSize.width, canvasSize.height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = image.createGraphics();
-        paint(g2);
+        
+        // Draw white background
+        g2.setColor(Color.WHITE);
+        g2.fillRect(0, 0, canvasSize.width, canvasSize.height);
+        
+        // Draw all images
+        for (CanvasImage img : images) {
+            g2.drawImage(img.image, getTransformForImage(img), null);
+        }
+        
         g2.dispose();
         return image;
+    }
+
+    // Sets the color for out-of-bounds areas
+    public void setOutOfBoundsColor(Color color) {
+    this.outOfBoundsColor = color;
+    repaint();
+    }
+
+    // Sets the canvas size
+    public void setCanvasSize(int width, int height) {
+        canvasSize = new Dimension(width, height);
+        updateCanvasSize();
     }
 
     // === Private Methods ===
@@ -309,12 +335,37 @@ public class LeftCanvas extends JPanel {
         return point;
     }
 
+    private void updateCanvasSize() {
+        setPreferredSize(canvasSize);
+        canvasBackground = new BufferedImage(canvasSize.width, canvasSize.height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = canvasBackground.createGraphics();
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(0, 0, canvasSize.width, canvasSize.height);
+        g2d.dispose();
+        revalidate();
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
+        
+        // Fill the entire component with out-of-bounds color
+        g2.setColor(outOfBoundsColor);
+        g2.fillRect(0, 0, getWidth(), getHeight());
+        
+        // Draw the white canvas area
+        g2.setColor(Color.WHITE);
+        g2.fillRect(0, 0, canvasSize.width, canvasSize.height);
+        
+        // Draw a subtle border around the canvas
+        g2.setColor(Color.LIGHT_GRAY);
+        g2.drawRect(0, 0, canvasSize.width, canvasSize.height);
+        
+        // Apply rotation and draw images
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.rotate(canvasRotation, getWidth() / 2.0, getHeight() / 2.0);
+        g2.rotate(canvasRotation, canvasSize.width / 2.0, canvasSize.height / 2.0);
 
         for (CanvasImage img : images) {
             g2.drawImage(img.image, getTransformForImage(img), null);
@@ -354,10 +405,8 @@ public class LeftCanvas extends JPanel {
                 g2.setColor(Color.BLACK);
                 g2.draw(circle);
             }
-
             g2.setTransform(original);
         }
-
         g2.dispose();
     }
 }

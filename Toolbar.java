@@ -18,6 +18,10 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     // ===== LeftCanvas Buttons =====
     private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton,
             composeCanvasButton, rotateCanvasButton, deleteBtn;
+    
+    private JTextField widthField;
+    private JTextField heightField;
+    private JButton resizeButton;
 
     // ===== RightCanvas Buttons =====
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
@@ -51,6 +55,18 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         leftPanel.add(composeCanvasButton);
         leftPanel.add(rotateCanvasButton);
         leftPanel.add(deleteBtn);
+
+        leftPanel.add(new JLabel("Width:"));
+        widthField = new JTextField("400", 5);
+        leftPanel.add(widthField);
+        
+        leftPanel.add(new JLabel("Height:"));
+        heightField = new JTextField("400", 5);
+        leftPanel.add(heightField);
+        
+        resizeButton = new JButton("Resize");
+        resizeButton.addActionListener(this);
+        leftPanel.add(resizeButton);
 
         // ==== RIGHT Panel ====
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -127,6 +143,18 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
             leftCanvas.rotateCanvas(Math.PI / 2);
         } else if (src == deleteBtn) {
             leftCanvas.deleteSelectedImage();
+        } else if (src == resizeButton) {
+            try {
+                int width = Integer.parseInt(widthField.getText());
+                int height = Integer.parseInt(heightField.getText());
+                if (width > 0 && height > 0) {
+                    leftCanvas.setCanvasSize(width, height);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Please enter positive values");
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Please enter valid numbers");
+            }
         }
 
         // ==== RightCanvas actions ====
@@ -139,6 +167,10 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
+    public void setOutOfBoundsColor(Color color) {
+        leftCanvas.setOutOfBoundsColor(color);
+    }
+    
     /**
      * Opens file chooser to insert an image into LeftCanvas.
      */

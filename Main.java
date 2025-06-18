@@ -9,11 +9,20 @@ public class Main {
         RightCanvas rightCanvas = new RightCanvas();
         Toolbar toolbar = new Toolbar(rightCanvas, leftCanvas);
         
+        // Create scroll panes with proper viewport settings
+        JScrollPane leftScroll = new JScrollPane(leftCanvas);
+        leftScroll.setBorder(BorderFactory.createEmptyBorder());
+        leftScroll.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+        
+        JScrollPane rightScroll = new JScrollPane(rightCanvas);
+        rightScroll.setBorder(BorderFactory.createEmptyBorder());
+        rightScroll.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+        
         // Setup main window layout
         JSplitPane splitPane = new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
-            leftCanvas,
-            rightCanvas
+            leftScroll,
+            rightScroll
         );
         splitPane.setDividerLocation(400);
         
