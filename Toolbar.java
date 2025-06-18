@@ -63,9 +63,11 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         penSizeSlider.setPaintTicks(true);
         penSizeSlider.setPaintLabels(true);
 
-        colorLabel.setOpaque(true);
-        colorLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        colorLabel.setBackground(rightCanvas.getPenColor());
+        Image img = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = (Graphics2D) img.getGraphics();
+        g.setColor(rightCanvas.getPenColor());
+        g.fillRect(0, 0, 32, 32);
+        colorLabel.setIcon(new ImageIcon(img));
 
         rightPanel.add(penSizeSlider);
         rightPanel.add(colorLabel);
