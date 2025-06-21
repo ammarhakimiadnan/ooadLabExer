@@ -147,6 +147,12 @@ public class LeftCanvas extends JPanel {
         updateCanvasSize();
     }
 
+    public void clearCanvas() {
+        images.clear();
+        selectedImage = null;
+        repaint();
+    }
+
     // === Private Methods ===
 
     // Adds an image to the canvas at a fixed location

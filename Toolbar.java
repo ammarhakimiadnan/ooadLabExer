@@ -15,13 +15,13 @@ import javax.imageio.ImageIO;
  */
 public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     // ===== LeftCanvas Buttons =====
-    private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton, composeCanvasButton, rotateCanvasButton, deleteBtn, resizeButton;
-    private JTextField widthField, heightField;
+    private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton, composeCanvasButton, rotateCanvasButton, deleteBtn, newCanvasButton;
+    //private JTextField widthField, heightField;
 
     // ===== RightCanvas Buttons =====
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
-    private JLabel colorLabel = new JLabel("  ");
-    private JButton clearBtn, loadRightButton, saveRightButton;
+    //private JLabel colorLabel = new JLabel("  ");
+    private JButton clearBtn, loadRightButton, saveRightButton, colorButton;
 
     private RightCanvas rightCanvas;
     private LeftCanvas leftCanvas;
@@ -42,6 +42,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         composeCanvasButton = createIconButton("resources/icons/compose.png", "Compose Left Canvas");
         rotateCanvasButton = createIconButton("resources/icons/rotate.png", "Rotate Left Canvas 90°");
         deleteBtn = createIconButton("resources/icons/delete.png", "Delete Selected Image");
+        newCanvasButton = createIconButton("resources/icons/new.png", "Create New Canvas");
 
         leftPanel.add(addAnimalBtn);
         leftPanel.add(addFlowerBtn);
@@ -50,18 +51,9 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         leftPanel.add(composeCanvasButton);
         leftPanel.add(rotateCanvasButton);
         leftPanel.add(deleteBtn);
-
-        leftPanel.add(new JLabel("Width:"));
-        widthField = new JTextField("400", 5);
-        leftPanel.add(widthField);
-        
-        leftPanel.add(new JLabel("Height:"));
-        heightField = new JTextField("400", 5);
-        leftPanel.add(heightField);
-        
-        resizeButton = new JButton("Resize");
-        resizeButton.addActionListener(this);
-        leftPanel.add(resizeButton);
+        leftPanel.add(newCanvasButton);
+        leftPanel.add(newCanvasButton);
+        newCanvasButton.addActionListener(this);
 
         // ==== RIGHT Panel ====
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -74,14 +66,41 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         penSizeSlider.setPaintTicks(true);
         penSizeSlider.setPaintLabels(true);
 
-        Image img = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = (Graphics2D) img.getGraphics();
-        g.setColor(rightCanvas.getPenColor());
-        g.fillRect(0, 0, 32, 32);
-        colorLabel.setIcon(new ImageIcon(img));
+        // Create color button instead of label
+        colorButton = new JButton() {
+            @Override
+            public void paintComponent(Graphics g) {
+                // Only paint the icon, no button decoration
+                if (getIcon() != null) {
+                    getIcon().paintIcon(this, g, 0, 0);
+                }
+            }
+        };
+        colorButton.setPreferredSize(new Dimension(32, 32));
+        colorButton.setContentAreaFilled(false);
+        colorButton.setBorderPainted(false);
+        colorButton.setFocusPainted(false);
+        colorButton.setBorder(BorderFactory.createEmptyBorder());
 
+        updateColorButtonIcon(rightCanvas.getPenColor());
+        colorButton.addActionListener(_ -> {
+            JColorChooser chooser = new JColorChooser(rightCanvas.getPenColor());
+            JDialog dialog = JColorChooser.createDialog(
+                null,  // No parent - will center on screen
+                "Choose Pen Color",
+                true,
+                chooser,
+                _ -> {
+                    rightCanvas.setPenColor(chooser.getColor());
+                    updateColorButtonIcon(chooser.getColor());
+                },
+                null
+            );
+            dialog.setLocationRelativeTo(null);  // Center on screen
+            dialog.setVisible(true);
+        });
         rightPanel.add(penSizeSlider);
-        rightPanel.add(colorLabel);
+        rightPanel.add(colorButton);
         rightPanel.add(clearBtn);
         rightPanel.add(loadRightButton);
         rightPanel.add(saveRightButton);
@@ -121,6 +140,23 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         return button;
     }
 
+    private void updateColorButtonIcon(Color color) {
+        BufferedImage image = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        // Draw color circle
+        g2d.setColor(color);
+        g2d.fillOval(4, 4, 24, 24);  // Slightly smaller than button size
+        
+        // Optional: Add border
+        g2d.setColor(color.darker());
+        g2d.drawOval(4, 4, 24, 24);
+        
+        g2d.dispose();
+        colorButton.setIcon(new ImageIcon(image));
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
@@ -138,18 +174,8 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
             leftCanvas.rotateCanvas(Math.PI / 2);
         } else if (src == deleteBtn) {
             leftCanvas.deleteSelectedImage();
-        } else if (src == resizeButton) {
-            try {
-                int width = Integer.parseInt(widthField.getText());
-                int height = Integer.parseInt(heightField.getText());
-                if (width > 0 && height > 0) {
-                    leftCanvas.setCanvasSize(width, height);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Please enter positive values");
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Please enter valid numbers");
-            }
+        } else if (src == newCanvasButton) {
+            createNewCanvas();
         }
 
         // ==== RightCanvas actions ====
@@ -243,6 +269,42 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
                 JOptionPane.showMessageDialog(null, "Image loaded successfully!");
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(null, "Error loading: " + ex.getMessage());
+            }
+        }
+    }
+
+    private void createNewCanvas() {
+        JPanel panel = new JPanel(new GridLayout(2, 2));
+        JTextField widthField = new JTextField("400");
+        JTextField heightField = new JTextField("400");
+        
+        panel.add(new JLabel("Width:"));
+        panel.add(widthField);
+        panel.add(new JLabel("Height:"));
+        panel.add(heightField);
+        
+        // Get the main frame to use as parent
+        JFrame frame = (JFrame)SwingUtilities.getWindowAncestor(this);
+        
+        int result = JOptionPane.showConfirmDialog(
+            frame,  // Changed from 'this' to 'frame'
+            panel,
+            "Create New Canvas",
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE);
+        
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                int width = Integer.parseInt(widthField.getText());
+                int height = Integer.parseInt(heightField.getText());
+                if (width > 0 && height > 0) {
+                    leftCanvas.setCanvasSize(width, height);
+                    leftCanvas.clearCanvas();
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Please enter positive values");
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Please enter valid numbers");
             }
         }
     }
