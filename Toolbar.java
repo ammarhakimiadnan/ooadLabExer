@@ -186,19 +186,18 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         } else if (src == newCanvasButton) {
             createNewCanvas();
         }
-
         // ==== RightCanvas actions ====
         else if (src == clearBtn) {
             rightCanvas.clearCanvas();
         } else if (src == loadRightButton) {
-            insertImageFromDevice(PICTURES_FOLDER_PATH, "custom");
+            // Changed this to use the right canvas loading method
+            loadImage(rightCanvas);
         } else if (src == saveRightButton) {
             saveCanvas(rightCanvas);
         } else if (src == eraserButton) {
             rightCanvas.setEraserMode(!rightCanvas.isEraserMode());
             eraserButton.setSelected(rightCanvas.isEraserMode());
             
-            // Visual feedback for eraser mode
             if (rightCanvas.isEraserMode()) {
                 eraserButton.setBorder(BorderFactory.createLineBorder(Color.RED, 2));
             } else {
@@ -282,6 +281,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     private void loadImage(JPanel canvas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Open Image");
+        fileChooser.setCurrentDirectory(new File(PICTURES_FOLDER_PATH)); // Set default to Pictures folder
 
         if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
@@ -291,7 +291,6 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
                 } else if (canvas instanceof RightCanvas) {
                     ((RightCanvas) canvas).loadImageFromFile(file);
                 }
-                JOptionPane.showMessageDialog(null, "Image loaded successfully!");
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(null, "Error loading: " + ex.getMessage());
             }
