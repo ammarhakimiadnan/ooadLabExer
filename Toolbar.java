@@ -170,11 +170,11 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
 
         // ==== LeftCanvas actions ====
         if (src == addAnimalBtn) {
-            insertImageFromDevice(ANIMAL_FOLDER_PATH);
+            insertImageFromDevice(ANIMAL_FOLDER_PATH, "animal");
         } else if (src == addFlowerBtn) {
-            insertImageFromDevice(FLOWER_FOLDER_PATH);
+            insertImageFromDevice(FLOWER_FOLDER_PATH, "flower");
         } else if (src == loadButton) {
-            insertImageFromDevice(PICTURES_FOLDER_PATH);
+            insertImageFromDevice(PICTURES_FOLDER_PATH, "custom");
         } else if (src == saveButton) {
             saveCanvas(leftCanvas);
         } else if (src == composeCanvasButton) {
@@ -211,11 +211,10 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
      * Opens file chooser to insert an image into LeftCanvas from a specified folder.
      * @param folderPath The path to the folder containing the images (e.g., animal or flower folder).
      */
-    private void insertImageFromDevice(String folderPath) {
+    private void insertImageFromDevice(String folderPath, String type) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select an Image to Insert");
         
-        // Set the current directory to the specified folder
         File folder = new File(folderPath);
         if (folder.exists() && folder.isDirectory()) {
             fileChooser.setCurrentDirectory(folder);
@@ -229,7 +228,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
             try {
                 BufferedImage image = ImageIO.read(file);
                 if (image != null) {
-                    leftCanvas.insertImage(image);
+                    leftCanvas.insertImage(image, type);
                 } else {
                     JOptionPane.showMessageDialog(this, "Unsupported image format.");
                 }
