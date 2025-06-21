@@ -37,9 +37,9 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
 
         // ==== LEFT Panel ====
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        addAnimalBtn = createIconButton("resources/icons/add animal.png", "Insert Animal Image");
-        addFlowerBtn = createIconButton("resources/icons/add flower.png", "Insert Flower Image");
-        loadButton = createIconButton("resources/icons/load image.png", "Load Image to Left Canvas");
+        addAnimalBtn = createIconButton("resources/icons/add_animal.png", "Insert Animal Image");
+        addFlowerBtn = createIconButton("resources/icons/add_flower.png", "Insert Flower Image");
+        loadButton = createIconButton("resources/icons/load_image.png", "Load Image to Left Canvas");
         saveButton = createIconButton("resources/icons/save.png", "Save Left Canvas");
         composeCanvasButton = createIconButton("resources/icons/compose.png", "Compose Left Canvas");
         rotateCanvasButton = createIconButton("resources/icons/rotate.png", "Rotate Left Canvas 90°");
@@ -58,8 +58,8 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         // ==== RIGHT Panel ====
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         clearBtn = createIconButton("resources/icons/clear.png", "Clear Right Canvas");
-        loadRightButton = createIconButton("resources/icons/upload right.png", "Load Image to Right Canvas");
-        saveRightButton = createIconButton("resources/icons/save right.png", "Save Right Canvas");
+        loadRightButton = createIconButton("resources/icons/upload_right.png", "Load Image to Right Canvas");
+        saveRightButton = createIconButton("resources/icons/save_right.png", "Save Right Canvas");
 
         penSizeSlider.setMinorTickSpacing(1);
         penSizeSlider.setMajorTickSpacing(5);
