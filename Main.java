@@ -3,7 +3,7 @@ import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
-        JFrame frame = new JFrame("PixelCraft Studio");
+        JFrame frame = new JFrame("Drawing Studio Pro");
         
         LeftCanvas leftCanvas = new LeftCanvas();
         RightCanvas rightCanvas = new RightCanvas();
