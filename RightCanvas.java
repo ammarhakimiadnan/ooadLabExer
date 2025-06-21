@@ -114,11 +114,12 @@ public class RightCanvas extends JPanel {
                     g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     
                     if (eraserMode) {
-                        // Erase by drawing with background color
-                        g2d.setColor(Color.WHITE);
+                        // Erase by drawing with background color (only affects drawing buffer)
+                        g2d.setComposite(AlphaComposite.Clear);
                     } else {
                         // Normal drawing with pen color
                         g2d.setColor(penColor);
+                        g2d.setComposite(AlphaComposite.SrcOver);
                     }
                     
                     g2d.setStroke(new BasicStroke(penSize, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -198,7 +199,7 @@ public class RightCanvas extends JPanel {
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, getWidth(), getHeight());
         
-        // Draw the uploaded image first (bottom layer)
+        // Draw the uploaded image (on its own layer)
         if (uploadedImage != null && imagePosition != null) {
             g.drawImage(uploadedImage, imagePosition.x, imagePosition.y, this);
             
@@ -214,7 +215,7 @@ public class RightCanvas extends JPanel {
             }
         }
         
-        // Draw the drawing buffer on top (pen drawings)
+        // Draw the drawing buffer (pen drawings) on top
         if (drawingBuffer != null) {
             g.drawImage(drawingBuffer, 
                 0, 0, getWidth(), getHeight(),
@@ -241,18 +242,22 @@ public class RightCanvas extends JPanel {
     }
 
     public void clearCanvas() {
-        // Clear both the drawing buffer and uploaded image
+        // Clear the drawing buffer
         Graphics2D g2d = drawingBuffer.createGraphics();
-        g2d.setColor(Color.WHITE);
+        g2d.setComposite(AlphaComposite.Clear);
         g2d.fillRect(0, 0, drawingBuffer.getWidth(), drawingBuffer.getHeight());
         g2d.dispose();
+        
+        // Clear the uploaded image
         uploadedImage = null;
         imagePosition = null;
+        imageSelected = false;
+        
         repaint();
     }
 
     public void saveCanvasToFile(File file, String format) throws IOException {
-        // Create a new image combining both the drawing buffer and uploaded image
+        // Create a new image combining both layers
         BufferedImage combined = new BufferedImage(
             drawingBuffer.getWidth(),
             drawingBuffer.getHeight(),
@@ -260,16 +265,18 @@ public class RightCanvas extends JPanel {
         );
         
         Graphics2D g2d = combined.createGraphics();
+        
+        // Draw white background
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, combined.getWidth(), combined.getHeight());
-        
-        // Draw the pen drawings
-        g2d.drawImage(drawingBuffer, 0, 0, null);
         
         // Draw the uploaded image if it exists
         if (uploadedImage != null && imagePosition != null) {
             g2d.drawImage(uploadedImage, imagePosition.x, imagePosition.y, null);
         }
+        
+        // Draw the pen drawings
+        g2d.drawImage(drawingBuffer, 0, 0, null);
         
         g2d.dispose();
         ImageIO.write(combined, format, file);
