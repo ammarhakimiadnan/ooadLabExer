@@ -191,7 +191,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         else if (src == clearBtn) {
             rightCanvas.clearCanvas();
         } else if (src == loadRightButton) {
-            loadImage(rightCanvas);
+            insertImageFromDevice(PICTURES_FOLDER_PATH, "custom");
         } else if (src == saveRightButton) {
             saveCanvas(rightCanvas);
         } else if (src == eraserButton) {
