@@ -98,15 +98,15 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
             dialog.setVisible(true);
         });
 
-        eraserButton = createIconButton("resources/icons/eraser.jpg", "Toggle Eraser");
+        eraserButton = createIconButton("resources/icons/eraser.png", "Toggle Eraser");
         eraserButton.addActionListener(this);
 
         rightPanel.add(penSizeSlider);
         rightPanel.add(colorButton);
+        rightPanel.add(eraserButton);
         rightPanel.add(clearBtn);
         rightPanel.add(loadRightButton);
         rightPanel.add(saveRightButton);
-        rightPanel.add(eraserButton);
 
         // Add both sections to the toolbar
         add(leftPanel, BorderLayout.WEST);
