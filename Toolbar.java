@@ -24,6 +24,10 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     private RightCanvas rightCanvas;
     private LeftCanvas leftCanvas;
 
+    // Define paths to the animal and flower folders
+    private static final String ANIMAL_FOLDER_PATH = "animal";
+    private static final String FLOWER_FOLDER_PATH = "flower";
+
     public Toolbar(RightCanvas rightCanvas, LeftCanvas leftCanvas) {
         this.rightCanvas = rightCanvas;
         this.leftCanvas = leftCanvas;
@@ -50,8 +54,6 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         leftPanel.add(rotateCanvasButton);
         leftPanel.add(deleteBtn);
         leftPanel.add(newCanvasButton);
-        leftPanel.add(newCanvasButton);
-        newCanvasButton.addActionListener(this);
 
         // ==== RIGHT Panel ====
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -120,6 +122,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         composeCanvasButton.addActionListener(this);
         rotateCanvasButton.addActionListener(this);
         deleteBtn.addActionListener(this);
+        newCanvasButton.addActionListener(this);
 
         clearBtn.addActionListener(this);
         loadRightButton.addActionListener(this);
@@ -165,8 +168,10 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         Object src = e.getSource();
 
         // ==== LeftCanvas actions ====
-        if (src == addAnimalBtn || src == addFlowerBtn) {
-            insertImageFromDevice();
+        if (src == addAnimalBtn) {
+            insertImageFromDevice(ANIMAL_FOLDER_PATH);
+        } else if (src == addFlowerBtn) {
+            insertImageFromDevice(FLOWER_FOLDER_PATH);
         } else if (src == loadButton) {
             loadImage(leftCanvas);
         } else if (src == saveButton) {
@@ -201,16 +206,23 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    public void setOutOfBoundsColor(Color color) {
-        leftCanvas.setOutOfBoundsColor(color);
-    }
-
     /**
-     * Opens file chooser to insert an image into LeftCanvas.
+     * Opens file chooser to insert an image into LeftCanvas from a specified folder.
+     * @param folderPath The path to the folder containing the images (e.g., animal or flower folder).
      */
-    private void insertImageFromDevice() {
+    private void insertImageFromDevice(String folderPath) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select an Image to Insert");
+        
+        // Set the current directory to the specified folder
+        File folder = new File(folderPath);
+        if (folder.exists() && folder.isDirectory()) {
+            fileChooser.setCurrentDirectory(folder);
+        } else {
+            JOptionPane.showMessageDialog(this, "Folder not found: " + folderPath);
+            return;
+        }
+
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             try {
