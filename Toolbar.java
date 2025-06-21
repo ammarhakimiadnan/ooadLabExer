@@ -27,6 +27,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     // Define paths to the animal and flower folders
     private static final String ANIMAL_FOLDER_PATH = "animal";
     private static final String FLOWER_FOLDER_PATH = "flower";
+    private static final String PICTURES_FOLDER_PATH = System.getProperty("user.home") + File.separator + "Pictures";
 
     public Toolbar(RightCanvas rightCanvas, LeftCanvas leftCanvas) {
         this.rightCanvas = rightCanvas;
@@ -173,7 +174,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         } else if (src == addFlowerBtn) {
             insertImageFromDevice(FLOWER_FOLDER_PATH);
         } else if (src == loadButton) {
-            loadImage(leftCanvas);
+            insertImageFromDevice(PICTURES_FOLDER_PATH);
         } else if (src == saveButton) {
             saveCanvas(leftCanvas);
         } else if (src == composeCanvasButton) {
