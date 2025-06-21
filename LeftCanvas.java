@@ -180,14 +180,22 @@ public class LeftCanvas extends JPanel {
     // Mouse event handling for image interaction
     private void setupMouseListeners() {
         MouseAdapter adapter = new MouseAdapter() {
+            private Point2D.Double toCanvasCoordinates(Point p) {
+            int canvasX = (getWidth() - canvasSize.width) / 2;
+            int canvasY = (getHeight() - canvasSize.height) / 2;
+            return new Point2D.Double(p.x - canvasX, p.y - canvasY);
+            }
+
             @Override
             public void mousePressed(MouseEvent e) {
                 requestFocusInWindow();
                 selectedImage = null;
 
+                Point2D.Double canvasPoint = toCanvasCoordinates(e.getPoint());
+
                 for (int i = images.size() - 1; i >= 0; i--) {
                     CanvasImage img = images.get(i);
-                    HandleType handle = getHandleAt(e.getPoint(), img);
+                    HandleType handle = getHandleAt(canvasPoint, img);
 
                     if (handle != HandleType.NONE) {
                         selectedImage = img;
@@ -238,9 +246,10 @@ public class LeftCanvas extends JPanel {
             public void mouseDragged(MouseEvent e) {
                 if (selectedImage == null || activeHandle == HandleType.NONE) return;
 
+                Point2D.Double canvasPoint = toCanvasCoordinates(e.getPoint());
                 Point2D.Double center = selectedImage.getCenter();
-                double dx = e.getX() - center.x;
-                double dy = e.getY() - center.y;
+                double dx = canvasPoint.x - center.x;
+                double dy = canvasPoint.y - center.y;
 
                 switch (activeHandle) {
                     case MOVE:
@@ -269,8 +278,10 @@ public class LeftCanvas extends JPanel {
 
             @Override
             public void mouseMoved(MouseEvent e) {
+                Point2D.Double canvasPoint = toCanvasCoordinates(e.getPoint());
+
                 if (selectedImage != null) {
-                    HandleType handle = getHandleAt(e.getPoint(), selectedImage);
+                    HandleType handle = getHandleAt(canvasPoint, selectedImage);
                     switch (handle) {
                         case SCALE:
                             setCursor(Cursor.getPredefinedCursor(Cursor.NE_RESIZE_CURSOR));
@@ -316,7 +327,7 @@ public class LeftCanvas extends JPanel {
         return at;
     }
 
-    private HandleType getHandleAt(Point p, CanvasImage img) {
+    private HandleType getHandleAt(Point2D.Double p, CanvasImage img) {
         Shape bounds = getTransformForImage(img).createTransformedShape(
                 new Rectangle(0, 0, img.image.getWidth(), img.image.getHeight()));
 
@@ -387,21 +398,26 @@ public class LeftCanvas extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         
+        // Calculate center position
+        int canvasX = (getWidth() - canvasSize.width) / 2;
+        int canvasY = (getHeight() - canvasSize.height) / 2;
+        
         // Fill the entire component with out-of-bounds color
         g2.setColor(outOfBoundsColor);
         g2.fillRect(0, 0, getWidth(), getHeight());
         
-        // Draw the white canvas area
+        // Draw the white canvas area centered
         g2.setColor(Color.WHITE);
-        g2.fillRect(0, 0, canvasSize.width, canvasSize.height);
+        g2.fillRect(canvasX, canvasY, canvasSize.width, canvasSize.height);
         
         // Draw a subtle border around the canvas
         g2.setColor(Color.LIGHT_GRAY);
-        g2.drawRect(0, 0, canvasSize.width, canvasSize.height);
+        g2.drawRect(canvasX, canvasY, canvasSize.width, canvasSize.height);
         
-        // Apply rotation and draw images
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.rotate(canvasRotation, canvasSize.width / 2.0, canvasSize.height / 2.0);
+        // Apply rotation and draw images centered
+        g2.translate(canvasX + canvasSize.width / 2.0, canvasY + canvasSize.height / 2.0);
+        g2.rotate(canvasRotation);
+        g2.translate(-canvasSize.width / 2.0, -canvasSize.height / 2.0);
 
         // Draw all images
         for (CanvasImage img : images) {
