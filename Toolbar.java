@@ -16,12 +16,10 @@ import javax.imageio.ImageIO;
 public class Toolbar extends JPanel implements ActionListener, ChangeListener {
     // ===== LeftCanvas Buttons =====
     private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton, composeCanvasButton, rotateCanvasButton, deleteBtn, newCanvasButton;
-    //private JTextField widthField, heightField;
 
     // ===== RightCanvas Buttons =====
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
-    //private JLabel colorLabel = new JLabel("  ");
-    private JButton clearBtn, loadRightButton, saveRightButton, colorButton;
+    private JButton clearBtn, loadRightButton, saveRightButton, colorButton, eraserButton;
 
     private RightCanvas rightCanvas;
     private LeftCanvas leftCanvas;
@@ -99,11 +97,16 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
             dialog.setLocationRelativeTo(null);  // Center on screen
             dialog.setVisible(true);
         });
+
+        eraserButton = createIconButton("resources/icons/eraser.jpg", "Toggle Eraser");
+        eraserButton.addActionListener(this);
+
         rightPanel.add(penSizeSlider);
         rightPanel.add(colorButton);
         rightPanel.add(clearBtn);
         rightPanel.add(loadRightButton);
         rightPanel.add(saveRightButton);
+        rightPanel.add(eraserButton);
 
         // Add both sections to the toolbar
         add(leftPanel, BorderLayout.WEST);
@@ -185,6 +188,16 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
             loadImage(rightCanvas);
         } else if (src == saveRightButton) {
             saveCanvas(rightCanvas);
+        } else if (src == eraserButton) {
+            rightCanvas.setEraserMode(!rightCanvas.isEraserMode());
+            eraserButton.setSelected(rightCanvas.isEraserMode());
+            
+            // Visual feedback for eraser mode
+            if (rightCanvas.isEraserMode()) {
+                eraserButton.setBorder(BorderFactory.createLineBorder(Color.RED, 2));
+            } else {
+                eraserButton.setBorder(BorderFactory.createEmptyBorder());
+            }
         }
     }
 
