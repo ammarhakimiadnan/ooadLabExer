@@ -29,9 +29,15 @@ public class LeftCanvas extends JPanel {
         double scale;
         boolean flipH, flipV;
 
+        // Existing constructor
         CanvasImage(BufferedImage img, Point pos) {
+            this(img, pos.x, pos.y);
+        }
+
+        // Add this new constructor
+        CanvasImage(BufferedImage img, int x, int y) {
             image = img;
-            position = new Point2D.Double(pos.x, pos.y);
+            position = new Point2D.Double(x, y);
             rotation = 0;
             scale = 1.0;
             flipH = false;
@@ -145,7 +151,21 @@ public class LeftCanvas extends JPanel {
 
     // Adds an image to the canvas at a fixed location
     private void addImage(BufferedImage img) {
-        images.add(new CanvasImage(img, new Point(50, 50)));
+        // Calculate position to center the image
+        int x = (canvasSize.width - img.getWidth()) / 2;
+        int y = (canvasSize.height - img.getHeight()) / 2;
+        
+        // If image is larger than canvas, scale it down
+        CanvasImage canvasImg = new CanvasImage(img, Math.max(0, x), Math.max(0, y));
+        if (img.getWidth() > canvasSize.width || img.getHeight() > canvasSize.height) {
+            double scale = Math.min(
+                (double)canvasSize.width / img.getWidth(),
+                (double)canvasSize.height / img.getHeight()
+            );
+            canvasImg.scale = scale * 0.95; // Slightly smaller to ensure it fits
+        }
+        
+        images.add(canvasImg);
         repaint();
     }
 
@@ -255,21 +275,54 @@ public class LeftCanvas extends JPanel {
                     case MOVE:
                         double moveDx = e.getX() - dragStartPoint.x;
                         double moveDy = e.getY() - dragStartPoint.y;
-                        selectedImage.position.x += moveDx;
-                        selectedImage.position.y += moveDy;
+                        
+                        // Calculate new position
+                        double newX = selectedImage.position.x + moveDx;
+                        double newY = selectedImage.position.y + moveDy;
+                        
+                        // Check boundaries
+                        double scaledWidth = selectedImage.image.getWidth() * selectedImage.scale;
+                        double scaledHeight = selectedImage.image.getHeight() * selectedImage.scale;
+                        
+                        newX = Math.max(0, Math.min(newX, canvasSize.width - scaledWidth));
+                        newY = Math.max(0, Math.min(newY, canvasSize.height - scaledHeight));
+                        
+                        selectedImage.position.x = newX;
+                        selectedImage.position.y = newY;
                         dragStartPoint = e.getPoint();
                         break;
+                        
                     case ROTATE:
                         double currentAngle = Math.atan2(dy, dx);
                         selectedImage.rotation = dragStartRotation + (currentAngle - dragStartAngle);
                         break;
+                        
                     case SCALE:
                         double currentDist = Math.sqrt(dx * dx + dy * dy);
                         double scaleFactor = currentDist / dragStartScaleDist;
-                        selectedImage.scale *= scaleFactor;
-                        selectedImage.scale = Math.max(0.1, Math.min(10.0, selectedImage.scale));
+                        double newScale = selectedImage.scale * scaleFactor;
+                        
+                        // Ensure scaling doesn't make the image go out of bounds
+                        double maxScale = Math.min(
+                            canvasSize.width / (double)selectedImage.image.getWidth(),
+                            canvasSize.height / (double)selectedImage.image.getHeight()
+                        );
+                        newScale = Math.max(0.1, Math.min(newScale, maxScale));
+                        
+                        selectedImage.scale = newScale;
                         dragStartScaleDist = currentDist;
+                        
+                        // Also adjust position to keep image in bounds after scaling
+                        selectedImage.position.x = Math.max(0, Math.min(
+                            selectedImage.position.x,
+                            canvasSize.width - (selectedImage.image.getWidth() * selectedImage.scale)
+                        ));
+                        selectedImage.position.y = Math.max(0, Math.min(
+                            selectedImage.position.y,
+                            canvasSize.height - (selectedImage.image.getHeight() * selectedImage.scale)
+                        ));
                         break;
+                        
                     default:
                         break;
                 }
@@ -465,6 +518,17 @@ public class LeftCanvas extends JPanel {
             g2.setTransform(original);
         }
         g2.dispose();
+    }
+
+    // Add this with the other private methods in LeftCanvas.java
+    private boolean isWithinCanvas(Point2D.Double point, CanvasImage img) {
+        double scaledWidth = img.image.getWidth() * img.scale;
+        double scaledHeight = img.image.getHeight() * img.scale;
+        
+        return point.x >= 0 && 
+            point.y >= 0 && 
+            (point.x + scaledWidth) <= canvasSize.width && 
+            (point.y + scaledHeight) <= canvasSize.height;
     }
 
 }
