@@ -247,6 +247,3 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 }
-
-
-
