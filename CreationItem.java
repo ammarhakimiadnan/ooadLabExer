@@ -1,4 +1,4 @@
-// CreationItem.java (updated)
+// Interface for drawable items supporting image retrieval, type, and basic transformations.
 import java.awt.image.BufferedImage;
 
 public interface CreationItem {

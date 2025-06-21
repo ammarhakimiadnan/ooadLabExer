@@ -1,3 +1,5 @@
+// This class provides functionality to compose a canvas from a LeftCanvas instance,
+// allowing users to save the composed canvas as an image and rotate it by 90 degrees.
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -14,15 +16,19 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class CanvasComposer {
-
     @SuppressWarnings("unused")
+    // This method composes a canvas from the provided LeftCanvas instance,
+    // displays it in a new JFrame, and provides options to save the composed canvas and rotate it by 90 degrees.
     public static void composeAndShow(LeftCanvas canvas) {
+        // Capture the canvas as a BufferedImage
         BufferedImage[] imageHolder = new BufferedImage[1];
         imageHolder[0] = canvas.captureCanvas();
 
+        // Create a JFrame to display the composed canvas
         JFrame frame = new JFrame("Composed Canvas");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+        // Create a JPanel to hold the image
         JPanel imagePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {

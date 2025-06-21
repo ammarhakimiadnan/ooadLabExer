@@ -1,3 +1,4 @@
+// Canvas for freehand drawing, image upload, and editing with pen or eraser functionality.
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -22,6 +23,7 @@ public class RightCanvas extends JPanel {
     private boolean imageSelected = false;
     private boolean eraserMode = false;
 
+    // Constructor initializes the canvas with a white background and sets up mouse listeners
     public RightCanvas() {
         setBackground(Color.WHITE);
         setToolTipText("Right-click to change pen color! Double-click image to move it.");
@@ -30,6 +32,7 @@ public class RightCanvas extends JPanel {
         setupDragAndDrop();
     }
 
+    // Initialize the drawing buffer with the specified size and type
     private void initializeDrawingBuffer() {
         drawingBuffer = new BufferedImage(
             drawingSize.width,
@@ -38,8 +41,10 @@ public class RightCanvas extends JPanel {
         );
     }
 
+    // Set up mouse listeners for drawing, image selection, and drag-and-drop functionality
     private void setupMouseListeners() {
         addMouseListener(new MouseAdapter() {
+            // Handle mouse press events for drawing or selecting images
             public void mousePressed(MouseEvent e) {
                 if (imageSelected && uploadedImage != null && imagePosition != null) {
                     // Check if click is on the selected image
@@ -58,11 +63,13 @@ public class RightCanvas extends JPanel {
                 previousPoint = e.getPoint();
             }
             
+            // Handle mouse release events to stop drawing or moving images
             public void mouseReleased(MouseEvent e) {
                 previousPoint = null;
                 dragStartPoint = null;
             }
             
+            // Handle mouse click events for changing pen color or selecting images
             public void mouseClicked(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     Color newColor = JColorChooser.showDialog(
@@ -96,10 +103,11 @@ public class RightCanvas extends JPanel {
             }
         });
 
+        // Mouse motion listener for dragging images or drawing with pen/eraser
         addMouseMotionListener(new MouseAdapter() {
             public void mouseDragged(MouseEvent e) {
                 if (imageSelected && dragStartPoint != null && uploadedImage != null) {
-                    // Move the image (existing code)
+                    // Move the image
                     int dx = e.getX() - dragStartPoint.x;
                     int dy = e.getY() - dragStartPoint.y;
                     imagePosition.x += dx;
@@ -114,7 +122,7 @@ public class RightCanvas extends JPanel {
                     g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     
                     if (eraserMode) {
-                        // Erase by drawing with background color (only affects drawing buffer)
+                        // Erase by drawing with background color
                         g2d.setComposite(AlphaComposite.Clear);
                     } else {
                         // Normal drawing with pen color
@@ -142,13 +150,16 @@ public class RightCanvas extends JPanel {
         });
     }
 
+    // Set up drag-and-drop functionality for image uploads
     private void setupDragAndDrop() {
         setTransferHandler(new TransferHandler() {
+            // Allow files to be dropped onto the canvas
             @Override
             public boolean canImport(TransferSupport support) {
                 return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor);
             }
 
+            // Handle the import of dropped files
             @Override
             public boolean importData(TransferSupport support) {
                 if (!canImport(support)) return false;
@@ -170,14 +181,17 @@ public class RightCanvas extends JPanel {
         });
     }
 
+    // Enable or disable eraser mode
     public void setEraserMode(boolean enabled) {
         this.eraserMode = enabled;
     }
 
+    // Check if eraser mode is enabled
     public boolean isEraserMode() {
         return eraserMode;
     }
 
+    // Load an image from a file and center it on the canvas
     public void loadImageFromFile(File file) throws IOException {
         BufferedImage img = ImageIO.read(file);
         if (img != null) {
@@ -191,6 +205,7 @@ public class RightCanvas extends JPanel {
         }
     }
 
+    // Load an image from a BufferedImage object and center it on the canvas
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -199,7 +214,7 @@ public class RightCanvas extends JPanel {
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, getWidth(), getHeight());
         
-        // Draw the uploaded image (on its own layer)
+        // Draw the uploaded image
         if (uploadedImage != null && imagePosition != null) {
             g.drawImage(uploadedImage, imagePosition.x, imagePosition.y, this);
             
@@ -207,10 +222,8 @@ public class RightCanvas extends JPanel {
             if (imageSelected) {
                 Graphics2D g2d = (Graphics2D)g.create();
                 g2d.setColor(Color.BLUE);
-                g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, 
-                                BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
-                g2d.drawRect(imagePosition.x, imagePosition.y, 
-                            uploadedImage.getWidth(), uploadedImage.getHeight());
+                g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
+                g2d.drawRect(imagePosition.x, imagePosition.y, uploadedImage.getWidth(), uploadedImage.getHeight());
                 g2d.dispose();
             }
         }
@@ -224,23 +237,28 @@ public class RightCanvas extends JPanel {
         }
     }
 
+    // Get the preferred size of the canvas for layout purposes
     @Override
     public Dimension getPreferredSize() {
         return drawingSize;
     }
 
+    // Set the size of the pen for drawing
     public void setPenSize(int size) {
         penSize = size;
     }
 
+    // Get the current size of the pen
     public void setPenColor(Color color) {
         this.penColor = color;
     }
 
+    // Get the current color of the pen
     public Color getPenColor() {
         return penColor;
     }
 
+    // Clear the canvas, removing all drawings and uploaded images
     public void clearCanvas() {
         // Clear the drawing buffer
         Graphics2D g2d = drawingBuffer.createGraphics();
@@ -256,6 +274,7 @@ public class RightCanvas extends JPanel {
         repaint();
     }
 
+    // Save the current canvas to a file in the specified format (e.g., PNG, JPEG)
     public void saveCanvasToFile(File file, String format) throws IOException {
         // Create a new image combining both layers
         BufferedImage combined = new BufferedImage(

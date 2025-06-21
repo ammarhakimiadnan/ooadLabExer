@@ -1,3 +1,4 @@
+// Toolbar for controlling LeftCanvas and RightCanvas actions, image loading/saving, and pen settings.
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -9,26 +10,24 @@ import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 
-/**
- * Toolbar with LeftCanvas controls aligned to the far left
- * and RightCanvas controls pushed to the far right.
- */
 public class Toolbar extends JPanel implements ActionListener, ChangeListener {
-    // ===== LeftCanvas Buttons =====
+    // LeftCanvas Buttons
     private JButton addAnimalBtn, addFlowerBtn, loadButton, saveButton, composeCanvasButton, rotateCanvasButton, deleteBtn, newCanvasButton;
 
-    // ===== RightCanvas Buttons =====
+    // RightCanvas Buttons
     private JSlider penSizeSlider = new JSlider(JSlider.HORIZONTAL, 1, 20, 4);
     private JButton clearBtn, loadRightButton, saveRightButton, colorButton, eraserButton;
 
+    // Reference to the canvases
     private RightCanvas rightCanvas;
     private LeftCanvas leftCanvas;
 
-    // Define paths to the animal and flower folders
+    // Define paths to the animal, flower and general image folders
     private static final String ANIMAL_FOLDER_PATH = "animal";
     private static final String FLOWER_FOLDER_PATH = "flower";
     private static final String PICTURES_FOLDER_PATH = System.getProperty("user.home") + File.separator + "Pictures";
 
+    // Constructor to initialize the toolbar with references to the canvases
     public Toolbar(RightCanvas rightCanvas, LeftCanvas leftCanvas) {
         this.rightCanvas = rightCanvas;
         this.leftCanvas = leftCanvas;
@@ -36,7 +35,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         // Use BorderLayout to split left/right control groups
         setLayout(new BorderLayout());
 
-        // ==== LEFT Panel ====
+        // Left Panel
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         addAnimalBtn = createIconButton("resources/icons/add_animal.png", "Insert Animal Image");
         addFlowerBtn = createIconButton("resources/icons/add_flower.png", "Insert Flower Image");
@@ -56,11 +55,12 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         leftPanel.add(deleteBtn);
         leftPanel.add(newCanvasButton);
 
-        // ==== RIGHT Panel ====
+        // Right Panel
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         clearBtn = createIconButton("resources/icons/clear.png", "Clear Right Canvas");
         loadRightButton = createIconButton("resources/icons/upload_right.png", "Load Image to Right Canvas");
         saveRightButton = createIconButton("resources/icons/save_right.png", "Save Right Canvas");
+        eraserButton = createIconButton("resources/icons/eraser.png", "Toggle Eraser");
 
         penSizeSlider.setMinorTickSpacing(1);
         penSizeSlider.setMajorTickSpacing(5);
@@ -71,7 +71,6 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         colorButton = new JButton() {
             @Override
             public void paintComponent(Graphics g) {
-                // Only paint the icon, no button decoration
                 if (getIcon() != null) {
                     getIcon().paintIcon(this, g, 0, 0);
                 }
@@ -87,7 +86,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         colorButton.addActionListener(_ -> {
             JColorChooser chooser = new JColorChooser(rightCanvas.getPenColor());
             JDialog dialog = JColorChooser.createDialog(
-                null,  // No parent - will center on screen
+                null,
                 "Choose Pen Color",
                 true,
                 chooser,
@@ -97,11 +96,10 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
                 },
                 null
             );
-            dialog.setLocationRelativeTo(null);  // Center on screen
+            dialog.setLocationRelativeTo(null);
             dialog.setVisible(true);
         });
 
-        eraserButton = createIconButton("resources/icons/eraser.png", "Toggle Eraser");
         eraserButton.addActionListener(this);
 
         rightPanel.add(penSizeSlider);
@@ -115,7 +113,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         add(leftPanel, BorderLayout.WEST);
         add(rightPanel, BorderLayout.EAST);
 
-        // ===== Register Listeners =====
+        // Register Listeners
         addAnimalBtn.addActionListener(this);
         addFlowerBtn.addActionListener(this);
         loadButton.addActionListener(this);
@@ -132,9 +130,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         penSizeSlider.addChangeListener(this);
     }
 
-    /**
-     * Creates an icon button with tooltip and styling.
-     */
+    // Creates an icon button with tooltip and styling.
     private JButton createIconButton(String path, String tooltip) {
         ImageIcon icon = new ImageIcon(path);
         Image scaled = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
@@ -147,6 +143,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         return button;
     }
 
+    // Updates the color button icon to reflect the current pen color.
     private void updateColorButtonIcon(Color color) {
         BufferedImage image = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
@@ -154,9 +151,9 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         
         // Draw color circle
         g2d.setColor(color);
-        g2d.fillOval(4, 4, 24, 24);  // Slightly smaller than button size
+        g2d.fillOval(4, 4, 24, 24);
         
-        // Optional: Add border
+        // Add border
         g2d.setColor(color.darker());
         g2d.drawOval(4, 4, 24, 24);
         
@@ -164,11 +161,12 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         colorButton.setIcon(new ImageIcon(image));
     }
 
+    // ActionListener method to handle button clicks and perform actions on the canvases.
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
 
-        // ==== LeftCanvas actions ====
+        // LeftCanvas actions
         if (src == addAnimalBtn) {
             insertImageFromDevice(ANIMAL_FOLDER_PATH, "animal");
         } else if (src == addFlowerBtn) {
@@ -186,7 +184,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         } else if (src == newCanvasButton) {
             createNewCanvas();
         }
-        // ==== RightCanvas actions ====
+        // RightCanvas actions
         else if (src == clearBtn) {
             rightCanvas.clearCanvas();
         } else if (src == loadRightButton) {
@@ -206,10 +204,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    /**
-     * Opens file chooser to insert an image into LeftCanvas from a specified folder.
-     * @param folderPath The path to the folder containing the images (e.g., animal or flower folder).
-     */
+    // Inserts an image from the specified folder path into the LeftCanvas.
     private void insertImageFromDevice(String folderPath, String type) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select an Image to Insert");
@@ -237,9 +232,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    /**
-     * Adjusts pen size for RightCanvas drawing.
-     */
+    // Adjusts pen size for RightCanvas drawing.
     @Override
     public void stateChanged(ChangeEvent e) {
         if (e.getSource() == penSizeSlider && !penSizeSlider.getValueIsAdjusting()) {
@@ -247,13 +240,12 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    /**
-     * Shared save logic for both canvases.
-     */
+    // Shared save logic for both canvases.
     private void saveCanvas(JPanel canvas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Canvas As");
 
+        // Set default directory to Pictures folder
         if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             String name = file.getName().toLowerCase();
@@ -275,9 +267,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
-    /**
-     * Shared image loader for both canvases.
-     */
+    // Shared image loader for both canvases.
     private void loadImage(JPanel canvas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Open Image");
@@ -297,6 +287,7 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         }
     }
 
+    // Creates a new canvas with specified dimensions.
     private void createNewCanvas() {
         JPanel panel = new JPanel(new GridLayout(2, 2));
         JTextField widthField = new JTextField("400");
@@ -311,12 +302,13 @@ public class Toolbar extends JPanel implements ActionListener, ChangeListener {
         JFrame frame = (JFrame)SwingUtilities.getWindowAncestor(this);
         
         int result = JOptionPane.showConfirmDialog(
-            frame,  // Changed from 'this' to 'frame'
+            frame,
             panel,
             "Create New Canvas",
             JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE);
         
+        // Check if the user clicked OK
         if (result == JOptionPane.OK_OPTION) {
             try {
                 int width = Integer.parseInt(widthField.getText());

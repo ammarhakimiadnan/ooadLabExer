@@ -1,6 +1,7 @@
-// AnimalItem.java (updated)
+// This file is part of the Animal Creation which allows users to create and manipulate animal images
 import java.awt.image.BufferedImage;
 
+// The AnimalItem class implements the CreationItem interface, providing methods to manipulate animal images
 public class AnimalItem implements CreationItem {
     private BufferedImage image;
     private double rotation;
@@ -8,6 +9,8 @@ public class AnimalItem implements CreationItem {
     private boolean flipH;
     private boolean flipV;
 
+    // Constructor to initialize the AnimalItem with an image
+    // and default values for rotation, scale, and flip states
     public AnimalItem(BufferedImage image) {
         this.image = image;
         this.rotation = 0;
@@ -16,51 +19,61 @@ public class AnimalItem implements CreationItem {
         this.flipV = false;
     }
 
+    // Method to get the image associated with this AnimalItem
     @Override
     public BufferedImage getImage() {
         return image;
     }
 
+    // Method to set a new image for this AnimalItem
     @Override
     public String getType() {
         return "Animal";
     }
 
+    // Method to set a new image for this AnimalItem
     @Override
     public void rotate(double radians) {
         this.rotation += radians;
     }
 
+    // Method to scale the image by a given factor
     @Override
     public void scale(double scaleFactor) {
         this.scale *= scaleFactor;
     }
 
+    // Method to flip the image horizontally
     @Override
     public void flipHorizontal() {
         this.flipH = !this.flipH;
     }
 
+    // Method to flip the image vertically
     @Override
     public void flipVertical() {
         this.flipV = !this.flipV;
     }
 
+    // Getters for the properties of the AnimalItem
     @Override
     public double getRotation() {
         return rotation;
     }
 
+    // Method to get the scale of the image
     @Override
     public double getScale() {
         return scale;
     }
 
+    // Method to check if the image is flipped horizontally
     @Override
     public boolean isFlippedH() {
         return flipH;
     }
 
+    // Method to check if the image is flipped vertically
     @Override
     public boolean isFlippedV() {
         return flipV;
