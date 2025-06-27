@@ -1,4 +1,5 @@
-// This is a simple Java Swing application that creates a drawing studio interface allowing users to draw on a left canvas and manipulate images on a right canvas.
+// This is a simple Java Swing application that creates a drawing studio interface allowing 
+// users to draw on a left canvas and manipulate images on a right canvas.
 import javax.swing.*;
 import java.awt.*;
 
